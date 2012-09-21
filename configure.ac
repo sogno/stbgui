@@ -244,6 +244,9 @@ lib/python/Plugins/SystemPlugins/Videomode/Makefile
 lib/python/Plugins/SystemPlugins/Videomode/meta/Makefile
 lib/python/Plugins/SystemPlugins/WirelessLan/Makefile
 lib/python/Plugins/SystemPlugins/WirelessLan/meta/Makefile
+lib/python/Plugins/SystemPlugins/DeviceManager/Makefile
+lib/python/Plugins/SystemPlugins/DeviceManager/icons/Makefile
+lib/python/Plugins/SystemPlugins/SwapManager/Makefile
 lib/python/Tools/Makefile
 po/Makefile
 main/Makefile
