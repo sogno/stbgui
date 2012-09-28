@@ -73,7 +73,7 @@ class UpdatePlugin(Screen):
 		try:
 			# TODO: Use Twisted's URL fetcher, urlopen is evil. And it can
 			# run in parallel to the package update.
-			if getBoxType() in urlopen("http://openpli.org/status").read():
+			if getBoxType() in urlopen("http://openpli.org/status").read().split(','):
 				message = _("The current beta image might not be stable.\nFor more information see www.openpli.org.")
 				picon = MessageBox.TYPE_ERROR
 				default = False
@@ -100,6 +100,9 @@ class UpdatePlugin(Screen):
 		if self.activity == 100:
 			self.activity = 0
 		self.activityslider.setValue(self.activity)
+
+	def showUpdateCompletedMessage(self):
+		self.setEndMessage(ngettext("Update completed, %d package was installed.", "Update completed, %d packages were installed.", self.packages) % self.packages)
 
 	def ipkgCallback(self, event, param):
 		if event == IpkgComponent.EVENT_DOWNLOAD:
@@ -145,7 +148,7 @@ class UpdatePlugin(Screen):
 			elif self.ipkg.currentCommand == IpkgComponent.CMD_UPGRADE_LIST:
 				self.total_packages = len(self.ipkg.getFetchedList())
 				if self.total_packages:
-					message = _("Do you want to update your receiver?") + "\n(%s " % self.total_packages + _("Packages") + ")"
+					message = _("Do you want to update your receiver?") + "\n(" + (ngettext("%s updated package available", "%s updated packages available", self.total_packages) % self.total_packages) + ")"
 					choices = [(_("Update and reboot (recommended)"), "cold"),
 						(_("Update and ask to reboot"), "hot"),
 						(_("Update channel list only"), "channels"),
@@ -165,11 +168,11 @@ class UpdatePlugin(Screen):
 					self.ipkg.startCmd(IpkgComponent.CMD_INSTALL, {'package': self.channellist_name})
 					self.channellist_only += 1
 				elif self.channellist_only == 4:
-					self.setEndMessage(_("Update completed. %d packages were installed.") % self.packages)
+					self.showUpdateCompletedMessage()
 					eDVBDB.getInstance().reloadBouquets()
 					eDVBDB.getInstance().reloadServicelist()
 			elif self.error == 0:
-				self.setEndMessage(_("Update completed. %d packages were installed.") % self.packages)
+				self.showUpdateCompletedMessage()
 			else:
 				self.activityTimer.stop()
 				self.activityslider.setValue(0)
@@ -200,7 +203,7 @@ class UpdatePlugin(Screen):
 		if answer[1] == "cold":
 			self.session.open(TryQuitMainloop,retvalue=42)
 			self.close()
-		if answer[1] == "channels":
+		elif answer[1] == "channels":
 			self.channellist_only = 1
 			self.slider.setValue(1)
 			self.ipkg.startCmd(IpkgComponent.CMD_LIST, args = {'installed_only': True})

@@ -169,8 +169,10 @@ class AutoDiseqc(Screen, ConfigListScreen):
 
 			if self.nr_of_ports == 4:
 				config.Nims[self.feid].diseqcMode.value = "diseqc_a_b_c_d"
-			else:
+			elif self.nr_of_ports == 2:
 				config.Nims[self.feid].diseqcMode.value = "diseqc_a_b"
+			else:
+				config.Nims[self.feid].diseqcMode.value = "single"
 
 			config.Nims[self.feid].configMode.value = "simple"
 			config.Nims[self.feid].simpleDiSEqCSetVoltageTone = self.simple_tone
@@ -185,7 +187,7 @@ class AutoDiseqc(Screen, ConfigListScreen):
 			self.tuner = Tuner(self.frontend)
 			self.tuner.tune(self.sat_frequencies[self.index])
 
-			self["statusbar"].setText(_("AutoDiseqc tuner %d\nDiseqc port %s for %s") % (self.feid, self.diseqc_ports[self.port_index], self.sat_frequencies[self.index][self.SAT_TABLE_NAME]))
+			self["statusbar"].setText(_("Checking tuner %d\nDiSEqC port %s for %s") % (self.feid, self.diseqc_ports[self.port_index], self.sat_frequencies[self.index][self.SAT_TABLE_NAME]))
 			self["tunerstatusbar"].setText(" ")
 
 			self.count = 0
@@ -200,7 +202,7 @@ class AutoDiseqc(Screen, ConfigListScreen):
 		self.statusTimer.start(100, True)
 
 	def setupConfig(self):
-		self["statusbar"].setText(_("AutoDiseqc finished"))
+		self["statusbar"].setText(_("Automatic configuration is finished"))
 		self["tunerstatusbar"].setText(_("Found %d position(s) of %d total") % (len(self.found_sats), self.nr_of_ports))
 		self["key_red"].setText(_("Wrong"))
 		if len(self.found_sats) > 0:
@@ -221,14 +223,6 @@ class AutoDiseqc(Screen, ConfigListScreen):
 
 	def setupClear(self):
 		self.clearNimEntries()
-		config.Nims[self.feid].diseqcA.value = ""
-		config.Nims[self.feid].diseqcB.value = ""
-		config.Nims[self.feid].diseqcC.value = ""
-		config.Nims[self.feid].diseqcD.value = ""
-		config.Nims[self.feid].diseqcMode.value = ""
-		config.Nims[self.feid].configMode.value = ""
-		config.Nims[self.feid].simpleDiSEqCSetVoltageTone.value = True
-		config.Nims[self.feid].simpleDiSEqCOnlyOnSatChange.value = False
 		self.saveAndReloadNimConfig()
 
 	def clearNimEntries(self):
@@ -286,7 +280,7 @@ class AutoDiseqc(Screen, ConfigListScreen):
 		if len(self.found_sats) > 0:
 			self.list = []
 			for x in self.found_sats:
-				self.list.append(getConfigListEntry((_("Diseqc port %s: %s") % (x[0], x[2]))))
+				self.list.append(getConfigListEntry((_("DiSEqC port %s: %s") % (x[0], x[2]))))
 			self["config"].l.setList(self.list)
 
 		if self.nr_of_ports == self.port_index:
