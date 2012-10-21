@@ -1,3 +1,4 @@
+from enigma import getBoxType
 import os
 
 class RcModel:
@@ -6,6 +7,7 @@ class RcModel:
 	RCTYPE_ET6X00 = 2
 	RCTYPE_ET9500 = 3
 	RCTYPE_VU = 4
+	RCTYPE_EBOX5000 = 5
 
 	def __init__(self):
 		self.currentRcType = self.RCTYPE_DMM
@@ -41,6 +43,8 @@ class RcModel:
 					self.currentRcType = self.RCTYPE_ET9500
 		elif os.path.exists('/proc/stb/info/vumodel'):
 			self.currentRcType = self.RCTYPE_VU
+		elif getBoxType() == 'ebox5000':
+			self.currentRcType = self.RCTYPE_EBOX5000
 
 	def getRcLocation(self):
 		if self.currentRcType == self.RCTYPE_ET9X00:
@@ -51,5 +55,7 @@ class RcModel:
 			return '/usr/share/enigma2/rc_models/et6x00/'
 		elif self.currentRcType == self.RCTYPE_VU:
 			return '/usr/share/enigma2/rc_models/vu/'
+		elif self.currentRcType == self.RCTYPE_EBOX5000:
+			return '/usr/share/enigma2/rc_models/ebox5000/'	
 
 rc_model = RcModel()
