@@ -41,10 +41,11 @@ class RcModel:
 					self.currentRcType = self.RCTYPE_VU
 				elif rc == '9':
 					self.currentRcType = self.RCTYPE_ET9500
+			elif model == 'ebox5000':
+				self.currentRcType = self.RCTYPE_EBOX5000
 		elif os.path.exists('/proc/stb/info/vumodel'):
 			self.currentRcType = self.RCTYPE_VU
-		elif getBoxType() == 'ebox5000':
-			self.currentRcType = self.RCTYPE_EBOX5000
+
 
 	def getRcLocation(self):
 		if self.currentRcType == self.RCTYPE_ET9X00:
