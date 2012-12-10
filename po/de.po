@@ -5959,12 +5959,13 @@ msgstr ""
 msgid ""
 "Welcome.\n"
 "\n"
-"This start wizard will guide you through the basic setup of your receiver.\n"
+"This start wizard will guide you through the basic setup of your STB_BOX.\n"
 "Press the OK button on your remote control to move to the next step."
 msgstr ""
 "Willkommen.\n"
 "\n"
-"Der Startassistent wird Sie durch die Grundeinstellungen Ihres Receivers führen.\n"
+"Der Startassistent wird Sie durch die Grundeinstellungen Ihrer STB_BOX "
+"führen.\n"
 "Drücken Sie OK auf Ihrer Fernbedienung, um zum nächsten Schritt zu gelangen."
 
 msgid "Welcome..."
@@ -7342,3 +7343,7 @@ msgstr "Umschalten"
 
 msgid "zapped"
 msgstr "umgeschaltet"
+
+#
+msgid "Do you want to enable the parental control feature on your STB_BOX?"
+msgstr "Den Jugendschutz auf der STB_BOX aktivieren?"
