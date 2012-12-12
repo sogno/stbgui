@@ -7347,3 +7347,26 @@ msgstr "umgeschaltet"
 #
 msgid "Do you want to enable the parental control feature on your STB_BOX?"
 msgstr "Den Jugendschutz auf der STB_BOX aktivieren?"
+
+msgid "Power On Display"
+msgstr "Display einschalten"
+
+# Box Display
+msgid "This option allows you to Power Off the display."
+msgstr "Diese Option erlaubt es, das Display komplett aus zu schalten"
+
+msgid "Repeat Display Message"
+msgstr "Display-Nachricht wiederholen"
+
+msgid ""
+"If the text is too long to be displayed on the front panel, it will be "
+"repeated (number of times):"
+msgstr ""
+"Wenn der Text zu lang für das Display ist läuft es mehrfach durch (Anzahl "
+"der Durchgänge):"
+
+msgid "Scrolling Speed"
+msgstr "Display-Nachricht Geschwindigkeit"
+
+msgid "Set the scrolling speed of text on the front display."
+msgstr "Wähle die Durchlaufgeschwindigkeit für Text im Display"

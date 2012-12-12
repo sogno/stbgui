@@ -30,6 +30,18 @@ class LCD:
 
 	def isOled(self):
 		return eDBoxLCD.getInstance().isOled()
+		
+	def setRepeat(self, value):
+		print 'setLCDRepeat',value
+		open("/proc/stb/lcd/scroll_repeats", "w").write(value)
+
+	def setScrollspeed(self, value):
+		print 'setLCDScrollspeed',value
+		open("/proc/stb/lcd/scroll_delay", "w").write(str(value))
+	
+	def setPower(self, value):
+		print 'setLCDPower',value
+		open("/proc/stb/power/vfd", "w").write(value)	
 
 def leaveStandby():
 	config.lcd.bright.apply()
@@ -56,6 +68,15 @@ def InitLcd():
 		def setLCDflipped(configElement):
 			ilcd.setFlipped(configElement.value);
 
+		def setLCDpower(configElement):
+			ilcd.setPower(configElement.getValue());
+
+		def setLCDrepeat(configElement):
+			ilcd.setRepeat(configElement.getValue());
+
+		def setLCDscrollspeed(configElement):
+			ilcd.setScrollspeed(configElement.getValue());			
+
 		standby_default = 0
 
 		ilcd = LCD()
@@ -67,11 +88,11 @@ def InitLcd():
 			config.lcd.contrast = ConfigNothing()
 			standby_default = 1
 
-		config.lcd.standby = ConfigSlider(default=standby_default, limits=(0, 10))
+		config.lcd.standby = ConfigSlider(default=standby_default, limits=(0, 7))
 		config.lcd.standby.addNotifier(setLCDbright);
 		config.lcd.standby.apply = lambda : setLCDbright(config.lcd.standby)
 
-		config.lcd.bright = ConfigSlider(default=5, limits=(0, 10))
+		config.lcd.bright = ConfigSlider(default=5, limits=(0, 7))
 		config.lcd.bright.addNotifier(setLCDbright);
 		config.lcd.bright.apply = lambda : setLCDbright(config.lcd.bright)
 		config.lcd.bright.callNotifiersOnSaveAndCancel = True
@@ -81,6 +102,15 @@ def InitLcd():
 
 		config.lcd.flip = ConfigYesNo(default=False)
 		config.lcd.flip.addNotifier(setLCDflipped);
+		
+		config.lcd.scrollspeed = ConfigSlider(default = 150, increment = 10, limits = (0, 500))
+		config.lcd.scrollspeed.addNotifier(setLCDscrollspeed);
+		
+		config.lcd.repeat = ConfigSelection([("0", _("None")), ("1", _("1X")), ("2", _("2X")), ("3", _("3X")), ("4", _("4X")), ("500", _("Continues"))], "3")
+		config.lcd.repeat.addNotifier(setLCDrepeat);
+		
+		config.lcd.power = ConfigSelection([("0", _("No")), ("1", _("Yes"))], "1")
+		config.lcd.power.addNotifier(setLCDpower);
 	else:
 		def doNothing():
 			pass
@@ -89,6 +119,9 @@ def InitLcd():
 		config.lcd.standby = ConfigNothing()
 		config.lcd.bright.apply = lambda : doNothing()
 		config.lcd.standby.apply = lambda : doNothing()
+		config.lcd.power = ConfigNothing()
+		config.lcd.repeat = ConfigNothing()
+		config.lcd.scrollspeed = ConfigNothing()
 
 	config.misc.standbyCounter.addNotifier(standbyCounterChanged, initial_call = False)
 
