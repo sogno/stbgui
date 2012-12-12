@@ -1058,6 +1058,7 @@ class InfoBarSeek:
 	def __seekableStatusChanged(self):
 #		print "seekable status changed!"
 		if not self.isSeekable():
+			SystemInfo["SeekStatePlay"] = False
 			self["SeekActions"].setEnabled(False)
 #			print "not seekable, return to play"
 			self.setSeekState(self.SEEK_STATE_PLAY)
@@ -1111,8 +1112,10 @@ class InfoBarSeek:
 
 	def playpauseService(self):
 		if self.seekstate != self.SEEK_STATE_PLAY:
+			SystemInfo["SeekStatePlay"] = True
 			self.unPauseService()
 		else:
+			SystemInfo["SeekStatePlay"] = False
 			self.pauseService()
 
 	def pauseService(self):

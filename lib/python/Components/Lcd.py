@@ -1,4 +1,4 @@
-from config import config, ConfigSubsection, ConfigSlider, ConfigYesNo, ConfigNothing
+from config import config, ConfigSubsection, ConfigSelection, ConfigSlider, ConfigYesNo, ConfigNothing
 from enigma import eDBoxLCD
 from Components.SystemInfo import SystemInfo
 
@@ -88,11 +88,11 @@ def InitLcd():
 			config.lcd.contrast = ConfigNothing()
 			standby_default = 1
 
-		config.lcd.standby = ConfigSlider(default=standby_default, limits=(0, 7))
+		config.lcd.standby = ConfigSlider(default=standby_default, limits=(0, 4))
 		config.lcd.standby.addNotifier(setLCDbright);
 		config.lcd.standby.apply = lambda : setLCDbright(config.lcd.standby)
 
-		config.lcd.bright = ConfigSlider(default=5, limits=(0, 7))
+		config.lcd.bright = ConfigSlider(default=4, limits=(0, 4))
 		config.lcd.bright.addNotifier(setLCDbright);
 		config.lcd.bright.apply = lambda : setLCDbright(config.lcd.bright)
 		config.lcd.bright.callNotifiersOnSaveAndCancel = True

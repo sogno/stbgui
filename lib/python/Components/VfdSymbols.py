@@ -5,6 +5,7 @@ import NavigationInstance
 from Tools.Directories import fileExists
 from Components.ParentalControl import parentalControl
 from Components.ServiceEventTracker import ServiceEventTracker
+from Components.SystemInfo import SystemInfo
 
 POLLTIME = 5 # seconds
 
@@ -23,6 +24,9 @@ class SymbolsCheckPoller:
 				iPlayableService.evUpdatedInfo: self.__evUpdatedInfo,
 			})
 
+	def __onClose(self):
+		pass
+
 	def start(self):
 		if self.symbolscheck not in self.timer.callback:
 			self.timer.callback.append(self.symbolscheck)
@@ -39,40 +43,26 @@ class SymbolsCheckPoller:
 
 	def JobTask(self):
 		self.Recording()
+		self.PlaySymbol()
 		self.timer.startLongTimer(POLLTIME)
 
 	def __evUpdatedInfo(self):
 		self.service = self.session.nav.getCurrentService()
 		self.Subtitle()
 		self.ParentalControl()
+		self.PlaySymbol()
 		del self.service
 
 	def Recording(self):
-		if fileExists("/proc/stb/lcd/symbol_circle"):
-			recordings = len(NavigationInstance.instance.getRecordings())
-			if recordings > 0:
-				open("/proc/stb/lcd/symbol_circle", "w").write("3")
-			else:
-				open("/proc/stb/lcd/symbol_circle", "w").write("0")
-		else:
-			if not fileExists("/proc/stb/lcd/symbol_recording") or not fileExists("/proc/stb/lcd/symbol_record_1") or not fileExists("/proc/stb/lcd/symbol_record_2"):
-				return
+		if not fileExists("/proc/stb/lcd/symbol_recording"):
+			return
 	
-			recordings = len(NavigationInstance.instance.getRecordings())
+		recordings = len(NavigationInstance.instance.getRecordings())
 		
-			if recordings > 0:
-				open("/proc/stb/lcd/symbol_recording", "w").write("1")
-				if recordings == 1:
-					open("/proc/stb/lcd/symbol_record_1", "w").write("1")
-					open("/proc/stb/lcd/symbol_record_2", "w").write("0")
-				elif recordings >= 2:
-					open("/proc/stb/lcd/symbol_record_1", "w").write("1")
-					open("/proc/stb/lcd/symbol_record_2", "w").write("1")
-			else:
-				open("/proc/stb/lcd/symbol_recording", "w").write("0")
-				open("/proc/stb/lcd/symbol_record_1", "w").write("0")
-				open("/proc/stb/lcd/symbol_record_2", "w").write("0")
-
+		if recordings > 0:
+			open("/proc/stb/lcd/symbol_recording", "w").write("1")
+		else:
+			open("/proc/stb/lcd/symbol_recording", "w").write("0")
 
 	def Subtitle(self):
 		if not fileExists("/proc/stb/lcd/symbol_smartcard"):
@@ -103,3 +93,12 @@ class SymbolsCheckPoller:
 				open("/proc/stb/lcd/symbol_parent_rating", "w").write("1")
 		else:
 			open("/proc/stb/lcd/symbol_parent_rating", "w").write("0")
+
+	def PlaySymbol(self):
+		if not fileExists("/proc/stb/lcd/symbol_play "):
+			return
+
+		if SystemInfo["SeekStatePlay"]:
+			open("/proc/stb/lcd/symbol_play ", "w").write("1")
+		else:
+			open("/proc/stb/lcd/symbol_play ", "w").write("0")
