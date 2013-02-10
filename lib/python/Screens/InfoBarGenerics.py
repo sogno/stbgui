@@ -1388,6 +1388,8 @@ class InfoBarTimeshift:
 			}, prio=-1) # priority over record
 
 		self.timeshift_enabled = False
+		self.check_timeshift = True
+
 		self["TimeshiftActivateActions"].setEnabled(False)
 		self.ts_rewind_timer = eTimer()
 		self.ts_rewind_timer.callback.append(self.rewindService)
@@ -1430,13 +1432,7 @@ class InfoBarTimeshift:
 				print "timeshift failed"
 
 	def stopTimeshift(self):
-		if not self.timeshift_enabled:
-			return 0
-		print "disable timeshift"
-		ts = self.getTimeshift()
-		if ts is None:
-			return 0
-		self.session.openWithCallback(self.stopTimeshiftConfirmed, MessageBox, _("Stop timeshift?"), MessageBox.TYPE_YESNO, simple = True)
+		self.checkTimeshiftRunning(self.stopTimeshiftConfirmed)
 
 	def stopTimeshiftConfirmed(self, confirmed):
 		if not confirmed:
@@ -1496,6 +1492,20 @@ class InfoBarTimeshift:
 		self.pvrStateDialog.hide()
 		self.timeshift_enabled = False
 		self.__seekableStatusChanged()
+
+	def checkTimeshiftRunning(self, returnFunction, answer = None):
+		if answer is None:
+			if self.timeshift_enabled and self.check_timeshift:
+				self.session.openWithCallback(boundFunction(self.checkTimeshiftRunning, returnFunction), MessageBox, _("Stop timeshift?"), simple = True)
+				return True
+			else:
+				self.check_timeshift = True
+				return False
+		elif answer:
+			self.check_timeshift = False
+			boundFunction(returnFunction, True)()
+		else:
+			boundFunction(returnFunction, False)()
 
 from Screens.PiPSetup import PiPSetup
 
