@@ -28,6 +28,10 @@
 #include <byteswap.h>
 #include <netinet/in.h>
 
+#include <iostream>
+#include <fstream>
+using namespace std;
+
 #ifndef BYTE_ORDER
 #error no byte order defined!
 #endif
