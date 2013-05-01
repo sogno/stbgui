@@ -43,7 +43,7 @@ def profile(id):
 			try:
 				if getBoxType() == "gb800se" or getBoxType() == "gb800solo":
 					f = open("/dev/dbox/oled0", "w")
-					f.write("%d" % perc)
+					f.write("%d \n" % perc)
 				else:
 					f = open("/proc/progress", "w")
 					f.write("%d \n" % perc)
