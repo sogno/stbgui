@@ -47,7 +47,7 @@ class RcModel:
 					self.currentRcType = self.RCTYPE_ET4X00
 				elif rc == '14':
 					self.currentRcType = self.RCTYPE_XP1000					
-			elif model == 'ebox5000' or model == 'ebox7358':
+			elif model == 'ebox5000' or model == 'ebox5100' or model == 'ebox7358':
 				self.currentRcType = self.RCTYPE_EBOX5000
 		elif os.path.exists('/proc/stb/info/vumodel'):
 			self.currentRcType = self.RCTYPE_VU
