@@ -2,7 +2,6 @@
 #define __servicemp3_h
 
 #include <lib/base/message.h>
-#include <lib/base/elock.h>
 #include <lib/service/iservice.h>
 #include <lib/dvb/pmt.h>
 #include <lib/dvb/subtitle.h>
@@ -12,8 +11,6 @@
 #include <lib/gui/esubtitle.h>
 
 class eStaticServiceMP3Info;
-
-class eSubtitleWidget;
 
 class eServiceFactoryMP3: public iServiceHandler
 {
@@ -160,10 +157,10 @@ public:
 	RESULT selectChannel(int i);
 
 		// iSubtitleOutput
-	RESULT enableSubtitles(eWidget *parent, SWIG_PYOBJECT(ePyObject) entry);
-	RESULT disableSubtitles(eWidget *parent);
-	PyObject *getSubtitleList();
-	PyObject *getCachedSubtitle();
+	RESULT enableSubtitles(iSubtitleUser *user, SubtitleTrack &track);
+	RESULT disableSubtitles();
+	RESULT getSubtitleList(std::vector<SubtitleTrack> &sublist);
+	RESULT getCachedSubtitle(SubtitleTrack &track);
 
 		// iStreamedService
 	RESULT streamed(ePtr<iStreamedService> &ptr);
@@ -234,7 +231,7 @@ private:
 	int selectAudioStream(int i);
 	std::vector<audioStream> m_audioStreams;
 	std::vector<subtitleStream> m_subtitleStreams;
-	eSubtitleWidget *m_subtitle_widget;
+	iSubtitleUser *m_subtitle_widget;
 	gdouble m_currentTrickRatio;
 	friend class eServiceFactoryMP3;
 	eServiceReference m_ref;
@@ -313,7 +310,6 @@ private:
 	typedef std::pair<uint32_t, subtitle_page_t> subtitle_pages_map_pair_t;
 	subtitle_pages_map_t m_subtitle_pages;
 	ePtr<eTimer> m_subtitle_sync_timer;
-	eSingleLock m_subtitle_lock;
 	
 	ePtr<eTimer> m_streamingsrc_timeout;
 	pts_t m_prev_decoder_time;
