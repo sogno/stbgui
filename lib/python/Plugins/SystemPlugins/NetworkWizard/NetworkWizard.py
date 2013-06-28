@@ -84,11 +84,14 @@ class NetworkWizard(WizardLanguage, Rc):
 		WizardLanguage.back(self)
 		
 	def stopScan(self):
-		self.rescanTimer.stop()
-		if self.w is not None:
-			from Plugins.SystemPlugins.WirelessLan.Wlan import iWlan
-			iWlan.stopGetNetworkList()
-			self.w = None
+		try:
+			self.rescanTimer.stop()
+			if self.w is not None:
+				from Plugins.SystemPlugins.WirelessLan.Wlan import iWlan
+				iWlan.stopGetNetworkList()
+				self.w = None
+		except:
+			pass
 
 	def getInstalledInterfaceCount(self):
 		self.originalInterfaceState = {}
