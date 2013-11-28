@@ -41,7 +41,7 @@ class LCD:
 	
 	def setPower(self, value):
 		print 'setLCDPower',value
-		open("/proc/stb/power/vfd", "w").write(value)	
+		#open("/proc/stb/power/vfd", "w").write(value)	
 
 def leaveStandby():
 	config.lcd.bright.apply()
