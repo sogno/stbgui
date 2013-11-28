@@ -10,7 +10,7 @@ from Components.ActionMap import NumberActionMap
 from Components.MenuList import MenuList
 from Components.ConfigList import ConfigList
 from Components.Sources.List import List
-from enigma import eTimer, eEnv
+from enigma import eTimer, eEnv, getMachineBrand, getMachineName
 
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
@@ -456,7 +456,7 @@ class Wizard(Screen):
 		return False
 
 	def getTranslation(self, text):
-		return _(text)
+		return _(text).replace("%s %s","%s %s" % (getMachineBrand(), getMachineName()))
 			
 	def updateText(self, firstset = False):
 		text = self.getTranslation(self.wizard[self.currStep]["text"])
