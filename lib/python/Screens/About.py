@@ -10,12 +10,20 @@ from Components.Button import Button
 from Tools.StbHardware import getFPVersion
 from enigma import eTimer
 
+from os import path, popen
+
 class About(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
 
 
 		AboutText = _("Hardware: ") + about.getHardwareTypeString() + "\n"
+		if path.exists('/proc/stb/info/chipset'):
+			AboutText += _("Chipset: BCM%s") % about.getChipSetString().lower().replace('\n','').replace('bcm','') + "\n"
+
+		AboutText += _("CPU: %s") % about.getCPUString() + "\n"
+		AboutText += _("Cores: %s") % about.getCpuCoresString() + "\n"
+		AboutText += _("Drivers: ") + about.getDriversVersionString() + "\n"
 		AboutText += _("Image: ") + about.getImageTypeString() + "\n"
 		AboutText += _("Kernel version: ") + about.getKernelVersionString() + "\n"
 
