@@ -24,10 +24,10 @@ class SoftwareTools(PackageInfoHandler):
 
 	def __init__(self):
 		aboutInfo = about.getImageVersionString()
-		if aboutInfo.startswith("dev-"):
-			self.ImageVersion = 'Experimental'
-		else:
-			self.ImageVersion = 'Stable'
+		#if aboutInfo.startswith("dev-"):
+		self.ImageVersion = 'Experimental'
+		#else:
+		#	self.ImageVersion = 'Stable'
 		self.language = language.getLanguage()[:2] # getLanguage returns e.g. "fi_FI" for "language_country"
 		PackageInfoHandler.__init__(self, self.statusCallback, blocking = False, neededTag = 'ALL_TAGS', neededFlag = self.ImageVersion)
 		self.directory = resolveFilename(SCOPE_METADIR)
