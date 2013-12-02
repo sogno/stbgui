@@ -1,5 +1,6 @@
 from enigma import eTimer, getBoxType
 from Components.config import config, ConfigSelection, ConfigSubDict, ConfigYesNo
+from Components.About import about
 
 from Tools.CList import CList
 from Tools.HardwareInfo import HardwareInfo
