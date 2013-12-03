@@ -107,6 +107,15 @@ def getCpuCoresString():
 		return cores
 	except IOError:
 		return "unavailable"
+
+def getMicomVersionString():
+	try:
+		f = open('/proc/stb/info/version', 'r')
+		micom = f.read()
+		f.close()
+		return micom.replace('\n','')
+	except IOError:
+		return "unavailable"
 	      
 # For modules that do "from About import about"
 about = sys.modules[__name__]
