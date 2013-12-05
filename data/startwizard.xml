@@ -19,7 +19,7 @@ self.selectKey("DOWN")
 			</code>
 		</step>
 		<step id="network" >
-			<text value="Please connect your receiver to the internet" />
+			<text value="Please connect your %s %s to the internet" />
 			<list>
 				<listentry caption="Check the internet connection" step="update" />
 				<listentry caption="Skip internet connection check (disables automatic package installation)" step="nima" />
@@ -42,7 +42,7 @@ self.selectKey("OK")
 			<condition>
 self.condition = not config.misc.installwizard.ipkgloaded.value
 			</condition>
-			<text value="Your receiver does not have an internet connection" />
+			<text value="Your %s %s does not have an internet connection" />
 			<list>
 				<listentry caption="Check the internet connection again" step="update" />
 				<listentry caption="Skip internet connection check (disables automatic package installation)" step="nima" />
@@ -124,13 +124,16 @@ self.selectKey("RIGHT")
 from Components.NimManager import nimmanager
 self.condition = nimmanager.somethingConnected() and not config.misc.installwizard.channellistdownloaded.value
 			</condition>
+			<code>
+self.hideRc()
+			</code>
 			<list>
-				<listentry caption="No, scan later manually" step="finisheddefaultsatlists" />
+				<listentry caption="No" step="softcam" />
 				<listentry caption="Yes, do an automatic scan now" step="scan" />
 				<listentry caption="Yes, do a manual scan now" step="manualscan" />
 			</list>
 		</step>
-		<step id="scan" nextstep="finisheddefaultsatlists">
+		<step id="scan" nextstep="softcam">
 			<condition>
 from Components.NimManager import nimmanager
 self.condition = nimmanager.somethingConnected() and not config.misc.installwizard.channellistdownloaded.value
@@ -153,58 +156,24 @@ self.condition = nimmanager.somethingConnected() and not config.misc.installwiza
 			</condition>
 			<text value="Do you want to do another manual service scan?" />
 			<list>
-				<listentry caption="No, scan later manually" step="finisheddefaultsatlists" />
+				<listentry caption="No" step="softcam" />
 				<listentry caption="Yes, do another manual scan now" step="manualscan" />
 			</list>
 		</step>
-		<step id="finisheddefaultsatlists">
-			<text value="Do you want to enable the parental control feature on your %s %s?" />
-			<list>
-				<listentry caption="No" step="end" />
-				<listentry caption="Yes" step="parentalsetup" />
-			</list>
-			<code pos="after">
-if self["list"].index == 0:
-	config.ParentalControl.configured.value = True
-else:
-	config.ParentalControl.configured.value = False
-config.ParentalControl.configured.save()
-			</code>
-		</step>
-		<step id="parentalsetup">
-			<text value="You need to set a PIN code and hide it from your children.\n\nDo you want to set the pin now?" />
-			<list>
-				<listentry caption="Yes" step="finishparentalsetup" />
-				<listentry caption="No" step="warnpin" />
-			</list>
-			<code pos="after">
-from ParentalControlSetup import ParentalControlChangePin
-if self["list"].index == 0:
-	self.session.open(ParentalControlChangePin, config.ParentalControl.servicepin[0], _("parental control pin"))
-			</code>
-		</step>
-		<step id="warnpin">
-			<text value="Please be aware, that anyone can disable the parental control, if you have not set a PIN." />
-		</step>
-		<step id="finishparentalsetup">
+		<step id="softcam">
+			<condition>
+self.condition = config.misc.installwizard.hasnetwork.value and config.misc.installwizard.ipkgloaded.value
+			</condition>
+			<text value="Would you like to install a softcam?" />
+			<config screen="InstallWizard" module="InstallWizard" args="2" type="ConfigList" />
 			<code>
-if config.ParentalControl.setuppin.value == "aaaa":
-	config.ParentalControl.setuppinactive.value = False
-else:
-	config.ParentalControl.setuppinactive.value = True
-config.ParentalControl.setuppinactive.save()
-config.ParentalControl.servicepinactive.value = True
-config.ParentalControl.servicepinactive.save()
-config.ParentalControl.setuppin.value = config.ParentalControl.servicepin[0].value
-config.ParentalControl.setuppin.save()
+self.clearSelectedKeys()
+self.selectKey("LEFT")
+self.selectKey("RIGHT")
 			</code>
-			<text value="After the start wizard is completed, you need to protect single services. Refer to your %s %s's manual on how to do that." />
 		</step>
 		<step id="end" laststep="true">
-			<condition>
-self.condition = self.isLastWizard
-			</condition>
-			<text value="Thank you for using the wizard. Your %s %s is now ready to use.\nPlease press OK to start using your %s %s." />
+			<text value="Thank you for using the wizard. Your %s %s is now ready for use.\nPress OK to start using your %s %s." />
 			<code>
 self.clearSelectedKeys()
 self.selectKey("OK")
