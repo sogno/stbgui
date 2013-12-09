@@ -33,11 +33,11 @@ class LCD:
 		
 	def setRepeat(self, value):
 		print 'setLCDRepeat',value
-		open("/proc/stb/lcd/scroll_repeats", "w").write(value)
+		#open("/proc/stb/lcd/scroll_repeats", "w").write(value)
 
 	def setScrollspeed(self, value):
 		print 'setLCDScrollspeed',value
-		open("/proc/stb/lcd/scroll_delay", "w").write(str(value))
+		#open("/proc/stb/lcd/scroll_delay", "w").write(str(value))
 	
 	def setPower(self, value):
 		print 'setLCDPower',value
