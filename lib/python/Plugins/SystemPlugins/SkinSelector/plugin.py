@@ -29,8 +29,8 @@ class SkinSelector(Screen):
 
 		self.skinlist = []
 		self.previewPath = ""
-		if os.path.exists(os.path.join(self.root, SKINXML)):
-			self.skinlist.append(DEFAULTSKIN)
+		#if os.path.exists(os.path.join(self.root, SKINXML)):
+		#	self.skinlist.append(DEFAULTSKIN)
 		for root, dirs, files in os.walk(self.root, followlinks=True):
 			for subdir in dirs:
 				dir = os.path.join(root,subdir)
