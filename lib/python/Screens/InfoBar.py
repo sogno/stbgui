@@ -48,6 +48,10 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 				"showMovies": (self.showMovies, _("Play recorded movies...")),
 				"showRadio": (self.showRadio, _("Show the radio player...")),
 				"showTv": (self.showTv, _("Show the tv player...")),
+				"showSetup": (self.showSetup, _("Show setup...")),
+				"resolution": (self.resolution, _("...")),
+				"aspect": (self.aspect, _("...")),
+				"showPortal": (self.showPORTAL, _("Open MediaPortal...")),
 			}, prio=2)
 		
 		self.allowPiP = True
@@ -131,6 +135,91 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 		else:
 			self.session.open(MoviePlayer, service, slist=self.servicelist, lastservice=ref, infobar=self)
 
+	def showSetup(self):
+		from Screens.Menu import MainMenu, mdom
+		root = mdom.getroot()
+		for x in root.findall("menu"):
+			y = x.find("id")
+			if y is not None:
+				id = y.get("val")
+				if id and id == "setup":
+					self.session.infobar = self
+					self.session.open(MainMenu, x)
+					return
+				      
+	def aspect(self):
+		selection = 0
+		tlist = []
+		try:
+			policy = open("/proc/stb/video/policy_choices").read()[:-1]
+		except IOError:
+			print "couldn't read available policymodes."
+			policy_available = [ ]
+			return
+		policy_available = policy.split(' ')
+		for x in policy_available:
+			tlist.append((x[0].upper() + x[1:], _(x)))
+
+		mode = open("/proc/stb/video/policy").read()[:-1]
+		for x in range(len(tlist)):
+			if tlist[x][1] == mode:
+				selection = x
+
+		keys = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
+		from Screens.ChoiceBox import ChoiceBox
+		self.session.openWithCallback(self.aspectSelect, ChoiceBox, title=_("Please select an aspect ratio..."), list = tlist, selection = selection, keys = keys)
+
+	def aspectSelect(self, aspect):
+		if not aspect is None:
+			if isinstance(aspect[1], str):
+				open("/proc/stb/video/policy", "w").write(aspect[1])
+		return
+
+	def resolution(self):
+		xresString = open("/proc/stb/vmpeg/0/xres", "r").read()
+		yresString = open("/proc/stb/vmpeg/0/yres", "r").read()
+		fpsString = open("/proc/stb/vmpeg/0/framerate", "r").read()
+		xres = int(xresString, 16)
+		yres = int(yresString, 16)
+		fps = int(fpsString, 16)
+		fpsFloat = float(fps)
+		fpsFloat = fpsFloat/1000
+
+		selection = 0
+		tlist = []
+		tlist.append(("Video: " + str(xres) + "x" + str(yres) + "@" + str(fpsFloat) + "hz", ""))
+		tlist.append(("--", ""))
+		tlist.append(("576i", "576i50"))
+		tlist.append(("576p", "576p50"))
+		tlist.append(("720p@50hz", "720p50"))
+		tlist.append(("720p@60hz", "720p60"))
+		tlist.append(("1080i@50hz", "1080i50"))
+		tlist.append(("1080i@60hz", "1080i60"))
+		keys = ["green", "", "yellow", "blue", "0", "1", "2", "3", "4", "5", "6", "7", "8", "9" ]
+
+		mode = open("/proc/stb/video/videomode").read()[:-1]
+		for x in range(len(tlist)):
+			if tlist[x][1] == mode:
+				selection = x
+		from Screens.ChoiceBox import ChoiceBox
+		self.session.openWithCallback(self.ResolutionSelect, ChoiceBox, title=_("Please select a resolution..."), list = tlist, selection = selection, keys = keys)
+
+	def ResolutionSelect(self, Resolution):
+		if not Resolution is None:
+			if isinstance(Resolution[1], str):
+				open("/proc/stb/video/videomode", "w").write(Resolution[1])
+				from enigma import gMainDC
+				gMainDC.getInstance().setResolution(-1, -1)
+		return
+	      
+	def showPORTAL(self):
+		try:
+			from Plugins.Extensions.MediaPortal.plugin import haupt_Screen
+			self.session.open(haupt_Screen)
+			no_plugin = False
+		except Exception, e:
+			self.session.open(MessageBox, _("The MediaPortal plugin is not installed!\nPlease install it."), type = MessageBox.TYPE_INFO,timeout = 10 )
+			
 class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBarShowMovies, InfoBarInstantRecord,
 		InfoBarAudioSelection, HelpableScreen, InfoBarNotifications, InfoBarServiceNotifications, InfoBarPVRState,
 		InfoBarCueSheetSupport, InfoBarMoviePlayerSummarySupport, InfoBarSubtitleSupport, Screen, InfoBarTeletextPlugin,

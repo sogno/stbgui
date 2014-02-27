@@ -195,6 +195,10 @@
 		<key id="KEY_TV" mapto="showTv" flags="m" />
 		<key id="KEY_FILE" mapto="showMovies" flags="m" />
 		<key id="KEY_TEXT" mapto="showText" flags="m" />
+		<key id="KEY_BOOKMARKS" mapto="showPortal" flags="m" />
+		<key id="KEY_MODE" mapto="aspect" flags="m" />
+		<key id="KEY_SCREEN" mapto="resolution" flags="m" />
+		<key id="KEY_SETUP" mapto="showSetup" flags="m" />
 	</map>
 
 	<map context="InfobarAudioSelectionActions">
