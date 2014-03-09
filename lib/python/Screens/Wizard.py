@@ -1,3 +1,5 @@
+from boxbranding import getMachineBrand, getMachineName
+
 from Screen import Screen
 from Screens.HelpMenu import HelpableScreen
 from Screens.MessageBox import MessageBox
@@ -10,7 +12,7 @@ from Components.ActionMap import NumberActionMap
 from Components.MenuList import MenuList
 from Components.ConfigList import ConfigList
 from Components.Sources.List import List
-from enigma import eTimer, eEnv, getMachineBrand, getMachineName
+from enigma import eTimer, eEnv
 
 from xml.sax import make_parser
 from xml.sax.handler import ContentHandler
