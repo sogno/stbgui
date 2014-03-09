@@ -1,6 +1,6 @@
 from Components.Harddisk import harddiskmanager
 from config import ConfigSubsection, ConfigYesNo, config, ConfigSelection, ConfigText, ConfigNumber, ConfigSet, ConfigLocations, ConfigSelectionNumber, ConfigClock, ConfigSlider
-from Tools.Directories import resolveFilename, SCOPE_HDD, defaultRecordingLocation
+from Tools.Directories import resolveFilename, SCOPE_HDD, SCOPE_TIMESHIFT, defaultRecordingLocation
 from enigma import setTunerTypePriorityOrder, setPreferredTuner, setSpinnerOnOff, setEnableTtCachingOnOff;
 from enigma import Misc_Options, eEnv;
 from Components.NimManager import nimmanager
@@ -72,8 +72,24 @@ def InitUsageConfig():
 	config.usage.default_path = ConfigText(default = resolveFilename(SCOPE_HDD))
 	config.usage.timer_path = ConfigText(default = "<default>")
 	config.usage.instantrec_path = ConfigText(default = "<default>")
-	config.usage.timeshift_path = ConfigText(default = "/media/hdd/")
-	config.usage.allowed_timeshift_paths = ConfigLocations(default = ["/media/hdd/"])
+	
+	if not os.path.exists(resolveFilename(SCOPE_TIMESHIFT)):
+		try:
+			os.mkdir(resolveFilename(SCOPE_TIMESHIFT),0755)
+		except:
+			pass
+	config.usage.timeshift_path = ConfigText(default = resolveFilename(SCOPE_TIMESHIFT))
+	if not config.usage.default_path.getValue().endswith('/'):
+		tmpvalue = config.usage.timeshift_path.getValue()
+		config.usage.timeshift_path.setValue(tmpvalue + '/')
+		config.usage.timeshift_path.save()
+	def timeshiftpathChanged(configElement):
+		if not config.usage.timeshift_path.getValue().endswith('/'):
+			tmpvalue = config.usage.timeshift_path.getValue()
+			config.usage.timeshift_path.setValue(tmpvalue + '/')
+			config.usage.timeshift_path.save()
+	config.usage.timeshift_path.addNotifier(timeshiftpathChanged, immediate_feedback = False)
+	config.usage.allowed_timeshift_paths = ConfigLocations(default = [resolveFilename(SCOPE_TIMESHIFT)])
 
 	config.usage.movielist_trashcan = ConfigYesNo(default=True)
 	config.usage.movielist_trashcan_days = ConfigNumber(default=8)
