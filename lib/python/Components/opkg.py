@@ -15,7 +15,12 @@ def enumPlugins(filter_start=''):
 	for feed in enumFeeds():
 		package = None
 		try:
-			for line in open('/var/lib/opkg/%s' % feed, 'r'):
+			try:
+				file = open('/var/lib/opkg/lists/%s' % feed, 'r')
+			except:
+				file = open('/var/lib/opkg/%s' % feed, 'r')
+				  
+			for line in file:
 				if line.startswith('Package:'):
 					package = line.split(":",1)[1].strip()
 					version = ''
