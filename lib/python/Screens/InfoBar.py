@@ -207,9 +207,9 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 	def ResolutionSelect(self, Resolution):
 		if not Resolution is None:
 			if isinstance(Resolution[1], str):
-				open("/proc/stb/video/videomode", "w").write(Resolution[1])
-				from enigma import gMainDC
-				gMainDC.getInstance().setResolution(-1, -1)
+				f = open("/proc/stb/video/videomode", "w")
+				f.write(Resolution[1])
+				f.close()
 		return
 	      
 	def showPORTAL(self):
