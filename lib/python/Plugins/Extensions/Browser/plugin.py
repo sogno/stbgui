@@ -916,7 +916,8 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 		__gval__.hbbtv_handelr = HandlerHbbTV(session)
 		__gval__.command_server = ServerFactory().doListenUnixTCP('/tmp/.sock.hbbtv.url', __gval__.hbbtv_handelr)
 
-		self._restart_opera()
+		if config.usage.enable_hbbtv_autostart.value == True:
+			self._restart_opera()
 
 		Screen.__init__(self, session)
 		InfoBarNotifications.__init__(self)
@@ -975,7 +976,7 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 		service = self._session.nav.getCurrentService()
 		info = service and service.info()
 		if info is not None:
-			sid	 = info.getInfo(iServiceInformation.sSID)
+			sid = info.getInfo(iServiceInformation.sSID)
 			onid = info.getInfo(iServiceInformation.sONID)
 			tsid = info.getInfo(iServiceInformation.sTSID)
 			name = info.getName()
@@ -987,7 +988,7 @@ class HbbTVHelper(Screen, InfoBarNotifications):
 
 			from aitreader import eAITSectionReader
 			reader = eAITSectionReader(demux, pmtid, sid)
-			if reader.doOpen():
+			if reader.doOpen(info, self.mVuplusBox):
 				reader.doParseApplications()
 				reader.doDump()
 			else:	print "no data!!"
@@ -2159,7 +2160,8 @@ def plugin_extension_browser_config(session, **kwargs):
 def Plugins(path, **kwargs):
 	l = []
 	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_AUTOSTART, needsRestart=True, fnc=auto_start_main))
-	l.append(PluginDescriptor(where=PluginDescriptor.WHERE_SESSIONSTART, needsRestart=True, fnc=session_start_main, weight=-10))
+	if not config.misc.firstrun.getValue():
+		l.append(PluginDescriptor(where=PluginDescriptor.WHERE_SESSIONSTART, needsRestart=True, fnc=session_start_main, weight=-10))
 	l.append(PluginDescriptor(name=_("HbbTV Applications"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, needsRestart=True, fnc=plugin_extension_start_application))
 	l.append(PluginDescriptor(name=_("Browser Start/Stop"), where=PluginDescriptor.WHERE_EXTENSIONSMENU, needsRestart=True, fnc=plugin_extension_browser_config))
 	l.append(PluginDescriptor(name=_("Web Browser"), description=_("start opera web browser"), where=PluginDescriptor.WHERE_PLUGINMENU, needsRestart=True, fnc=plugin_start_main))
