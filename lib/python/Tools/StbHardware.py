@@ -1,6 +1,15 @@
 from fcntl import ioctl
 from struct import pack, unpack
 
+def getMicomVersion():
+	try:
+		file = open("/proc/stb/info/micomver", "r")
+		micomver = file.readline().strip()
+		file.close()
+		return micomver
+	except IOError:
+		return "unknown"
+	      
 def getFPVersion():
 	ret = None
 	try:
