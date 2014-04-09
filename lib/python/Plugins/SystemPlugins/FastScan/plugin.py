@@ -164,7 +164,7 @@ class FastScanScreen(ConfigListScreen, Screen):
 		providerList = list(x[0] for x in self.providers)
 
 		lastConfiguration = eval(config.misc.fastscan.last_configuration.value)
-		if not lastConfiguration:
+		if not lastConfiguration or not tuple(x for x in self.providers if x[0] == lastConfiguration[1]):
 			lastConfiguration = (nimList[0][0], providerList[0], True, True, False)
 
 		self.scan_nims = ConfigSelection(default = lastConfiguration[0], choices = nimList)
@@ -250,27 +250,34 @@ class FastScanAutoScreen(FastScanScreen):
 
 		self.onClose.append(self.__onClose)
 
-		parameters = tuple(x[1] for x in self.providers if x[0] == lastConfiguration[1])[0]
-		pid = parameters[1]
-		if lastConfiguration[2] and parameters[2]:
-			pid += 1
-		self.scan = eFastScan(pid, lastConfiguration[1], self.getTransponderParameters(parameters[0]), lastConfiguration[3], lastConfiguration[4])
-		self.scan.scanCompleted.get().append(self.scanCompleted)
-		self.scan.start(int(lastConfiguration[0]))
+		parameters = tuple(x[1] for x in self.providers if x[0] == lastConfiguration[1])
+		if parameters:
+			parameters = parameters[0]
+			pid = parameters[1]
+			if lastConfiguration[2] and parameters[2]:
+				pid += 1
+			self.scan = eFastScan(pid, lastConfiguration[1], self.getTransponderParameters(parameters[0]), lastConfiguration[3], lastConfiguration[4])
+			self.scan.scanCompleted.get().append(self.scanCompleted)
+			self.scan.start(int(lastConfiguration[0]))
+		else:
+			self.scan = None
+			self.close(True)
 
 	def __onClose(self):
-		self.scan.scanCompleted.get().remove(self.scanCompleted)
-		del self.scan
+		if self.scan:
+			self.scan.scanCompleted.get().remove(self.scanCompleted)
+			del self.scan
 
 	def scanCompleted(self, result):
 		print "[AutoFastScan] completed result = ", result
 		refreshServiceList()
-		self.close()
+		self.close(result>0)
 
 	def Power(self):
 		from Screens.Standby import inStandby
 		inStandby.Power()
-		self.scanCompleted("Aborted")
+		print "[AutoFastScan] aborted due to power button pressed"
+		self.close(True)
 
 	def createSummary(self):
 		from Screens.Standby import StandbySummary
@@ -300,13 +307,17 @@ def FastScanMain(session, **kwargs):
 Session = None
 FastScanAutoStartTimer = eTimer()
 
+def restartScanAutoStartTimer(reply=False):
+	if not reply:
+		print "[AutoFastScan] Scan was not succesfully retry in one hour"
+		FastScanAutoStartTimer.startLongTimer(3600)
+
 def FastScanAuto():
 	lastConfiguration = eval(config.misc.fastscan.last_configuration.value)
-	if lastConfiguration:
-		if Session.nav.RecordTimer.isRecording():
-			FastScanAutoStartTimer.startLongTimer(3600)
-		else:
-			Session.open(FastScanAutoScreen, lastConfiguration)
+	if not lastConfiguration or Session.nav.RecordTimer.isRecording():
+		restartScanAutoStartTimer()
+	else:
+		Session.openWithCallback(restartScanAutoStartTimer, FastScanAutoScreen, lastConfiguration)
 
 FastScanAutoStartTimer.callback.append(FastScanAuto)
 
