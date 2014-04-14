@@ -6,8 +6,8 @@ from Components.NimManager import nimmanager
 from Components.About import about
 from Components.ScrollLabel import ScrollLabel
 from Components.Button import Button
-
-from Tools.StbHardware import getFPVersion
+from boxbranding import getBoxType, getMachineBrand, getMachineName, getImageVersion, getImageBuild, getDriverDate
+from Tools.StbHardware import getFPVersion, getMicomVersion
 from enigma import eTimer
 
 from os import path, popen
@@ -22,10 +22,16 @@ class About(Screen):
 
 		AboutText += _("CPU: %s") % about.getCPUString() + "\n"
 		AboutText += _("Cores: %s") % about.getCpuCoresString() + "\n"
-		AboutText += _("Drivers: ") + about.getDriversVersionString() + "\n"
+		string = getDriverDate()
+		year = string[0:4]
+		month = string[4:6]
+		day = string[6:8]
+		driversdate = '-'.join((year, month, day))
+		AboutText += _("Drivers: %s") % driversdate + "\n"
 		AboutText += _("Image: ") + about.getImageTypeString() + "\n"
 		AboutText += _("Kernel version: ") + about.getKernelVersionString() + "\n"
-
+		AboutText += _("Front Panel: %s") % getMicomVersion() + "\n"
+		
 		EnigmaVersion = "Enigma: " + about.getEnigmaVersionString()
 		self["EnigmaVersion"] = StaticText(EnigmaVersion)
 		AboutText += EnigmaVersion + "\n"
@@ -39,8 +45,9 @@ class About(Screen):
 			fp_version = ""
 		else:
 			fp_version = _("Frontprocessor version: %d") % fp_version
-			AboutText += fp_version + "\n"
-
+			#AboutText += fp_version + "\n"
+			
+			
 		self["FPVersion"] = StaticText(fp_version)
 
 		self["TunerHeader"] = StaticText(_("Detected NIMs:"))
