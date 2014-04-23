@@ -1,7 +1,7 @@
 import os, xml.dom.minidom
 from enigma import iServiceInformation
 
-DUMPBIN = "/usr/lib/enigma2/python/Plugins/Extensions/IniHbbTV/dumpait"
+DUMPBIN = "/usr/lib/enigma2/python/Plugins/Extensions/Browser/dumpait"
 class eAITSectionReader:
 	def __init__(self, demux, pmtid, sid):
 		self.mVuplusBox = False
@@ -73,7 +73,10 @@ class eAITSectionReader:
 			return False
 		document = document.decode("cp1252").encode("utf-8")
 		#print document
-		self.mDocument = xml.dom.minidom.parseString(document)
+		try:
+			self.mDocument = xml.dom.minidom.parseString(document)
+		except:
+			self.mDocument = xml.dom.minidom.parseString(document.replace('&', ' '))  
 		return True
 
 	def doDump(self):
