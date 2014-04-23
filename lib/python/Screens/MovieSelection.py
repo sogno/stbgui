@@ -920,7 +920,7 @@ class MovieSelection(Screen, HelpableScreen, SelectionEventInfo, InfoBarBase):
 			if ext in AUDIO_EXTENSIONS:
 				self.nextInBackground = next
 				self.callLater(self.preview)
-				self["list"].moveDown()
+				self["list"].moveToIndex(index+1)
 
 	def preview(self):
 		current = self.getCurrent()
