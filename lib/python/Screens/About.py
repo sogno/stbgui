@@ -16,7 +16,7 @@ class About(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
 		
-		AboutText = _("Hardware: ") + about.getHardwareTypeString() + "\n"
+		AboutText = _("Hardware: %s %s\n") % (getMachineBrand(), getMachineName())
 		if path.exists('/proc/stb/info/chipset'):
 			AboutText += _("Chipset: BCM%s") % about.getChipSetString().lower().replace('\n','').replace('bcm','') + "\n"
 
@@ -27,7 +27,7 @@ class About(Screen):
 		month = string[4:6]
 		day = string[6:8]
 		driversdate = '-'.join((year, month, day))
-		AboutText += _("Drivers: %s") % driversdate + "\n"
+		AboutText += _("Drivers: %s") % about.getDriverBuildDateString() + "\n"
 		AboutText += _("Image: ") + about.getImageTypeString() + "\n"
 		AboutText += _("Kernel version: ") + about.getKernelVersionString() + "\n"
 		AboutText += _("Front Panel: %s") % getMicomVersion() + "\n"
