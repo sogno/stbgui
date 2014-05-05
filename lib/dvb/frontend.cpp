@@ -1,4 +1,3 @@
-#include <linux/version.h>
 #include <linux/dvb/version.h>
 
 #include <lib/dvb/dvb.h>
@@ -1876,7 +1875,6 @@ void eDVBFrontend::setFrontend(bool recvEvents)
 				p[cmdseq.num].cmd = DTV_STREAM_ID, p[cmdseq.num].u.data = parm.plpid, cmdseq.num++;
 #elif DVB_API_VERSION == 5 && DVB_API_VERSION_MINOR >= 3
 				p[cmdseq.num].cmd = DTV_DVBT2_PLP_ID, p[cmdseq.num].u.data = parm.plpid, cmdseq.num++;
-#endif
 #endif
 			}
 		}
