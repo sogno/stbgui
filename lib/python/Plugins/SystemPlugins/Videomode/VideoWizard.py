@@ -81,7 +81,7 @@ class VideoWizard(WizardLanguage, Rc):
 		self["wizard"] = Pixmap()
 		self["portpic"] = Pixmap()
 		Screen.setTitle(self, _("Welcome..."))
-
+		
 		self.port = None
 		self.mode = None
 		self.rate = None

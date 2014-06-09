@@ -12,6 +12,7 @@ def getNumVideoDecoders():
 	return idx
 
 SystemInfo["NumVideoDecoders"] = getNumVideoDecoders()
+SystemInfo["PIPAvailable"] = SystemInfo["NumVideoDecoders"] > 1
 SystemInfo["CanMeasureFrontendInputPower"] = eDVBResourceManager.getInstance().canMeasureFrontendInputPower()
 
 
@@ -35,3 +36,5 @@ SystemInfo["Fan"] = fileCheck("/proc/stb/fp/fan")
 SystemInfo["FanPWM"] = SystemInfo["Fan"] and fileCheck("/proc/stb/fp/fan_pwm")
 SystemInfo["StandbyLED"] = fileCheck("/proc/stb/power/standbyled")
 SystemInfo["WakeOnLAN"] = fileCheck("/proc/stb/power/wol") or fileCheck("/proc/stb/fp/wol")
+SystemInfo["HasExternalPIP"] = fileCheck ("/proc/stb/vmpeg/1/external")
+SystemInfo["VideoDestinationConfigurable"] = fileExists("/proc/stb/vmpeg/0/dst_left")
