@@ -179,7 +179,7 @@ class NimSetup(Screen, ConfigListScreen, ServiceStopScreen):
 			self.configMode = getConfigListEntry(_("Configuration mode"), self.nimConfig.configMode)
 			self.list.append(self.configMode)
 			if self.nimConfig.configMode.value == "enabled":
-				self.list.append(getConfigListEntry(_("Network ID"), self.nimConfig.cable.scan_networkid))
+				#self.list.append(getConfigListEntry(_("Network ID"), self.nimConfig.cable.scan_networkid))
 				self.cableScanType=getConfigListEntry(_("Used service scan type"), self.nimConfig.cable.scan_type)
 				self.list.append(self.cableScanType)
 				if self.nimConfig.cable.scan_type.value == "provider":
