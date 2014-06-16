@@ -108,7 +108,7 @@ self.selectKey("RIGHT")
 		<step id="channels">
 			<condition>
 from Components.NimManager import nimmanager
-self.condition = nimmanager.somethingConnected() and config.misc.installwizard.hasnetwork.value and config.misc.installwizard.ipkgloaded.value
+self.condition = nimmanager.somethingConnected() and config.misc.installwizard.hasnetwork.value and config.misc.installwizard.ipkgloaded.value and (nimmanager.nim_slots[0].isCompatible("DVB-S") or  nimmanager.nim_slots[1].isCompatible("DVB-S"))
 			</condition>
 			<text value="Do you want to install a channel list?" />
 			<config screen="InstallWizard" module="InstallWizard" args="1" type="ConfigList" />
