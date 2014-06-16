@@ -27,7 +27,26 @@
 			<id val="setup" />
 			<menu weight="7" level="0" text="Service searching" entryID="service_searching_selection">
 				<id val="scan" />
-				<item text="Tuner configuration" entryID="tuner_setup"><screen module="Satconfig" screen="NimSelection" /></item>
+				<item text="Tuner configuration" entryID="tuner_setup">
+<code>
+from Screens.InputBox import InputBox
+msg = _('Enter the pin for tuner configuration')
+session = self.session
+def checkPIN(pin):
+	global session
+	from Screens.MessageBox import MessageBox
+	from Screens.Satconfig import NimSelection
+	config_pin = 1111
+	if pin is None:
+		pin = '0'
+	if int(pin) == int(config_pin):
+		session.open(NimSelection)
+	else:
+		session.open(MessageBox, _('Sorry, wrong pin.'), MessageBox.TYPE_ERROR)
+
+self.session.openWithCallback(checkPIN, InputBox, title=msg, windowTitle=_('Insert Pin'), text='', useableChars='1234567890')
+</code>
+				</item>
 				<item text="Automatic scan" entryID="auto_scan"><screen module="ScanSetup" screen="ScanSimple" /></item>
 				<item text="Manual scan" entryID="manual_scan"><screen module="ScanSetup" /></item>
 			</menu>
