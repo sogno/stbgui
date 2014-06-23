@@ -1073,7 +1073,18 @@ class ScanSimple(ConfigListScreen, Screen, CableTransponderSearchSupport):
 				nimconfig.nim_index = nim.slot
 				self.nim_enable.append(nimconfig)
 				self.list.append(getConfigListEntry(_("Scan ") + nim.slot_name + " (" + nim.friendly_type + ")", nimconfig))
+# SOGNO
+		self.cable_providers = [ ] 
+		n = 0
+		for x in nimmanager.cablesList:
+			 self.cable_providers.append((str(n), x[0]))
+			 n += 1
+			 
+		self.cable_provider_selection = ConfigSelection(default = "0", choices = self.cable_providers)
+		if nim.isCompatible("DVB-C"):
+			self.list.append(getConfigListEntry(_("Cable provider:"), self.cable_provider_selection))
 
+# SOGNO
 		ConfigListScreen.__init__(self, self.list)
 		self["header"] = Label(_("Automatic scan"))
 		self["footer"] = Label(_("Press OK to scan"))
@@ -1091,6 +1102,23 @@ class ScanSimple(ConfigListScreen, Screen, CableTransponderSearchSupport):
 
 	def keyGoCheckTimeshiftCallback(self, answer):
 		if answer:
+#SOGNO
+			try:
+				self.nim0 = nimmanager.nim_slots[0]
+				self.nimConfig0 = self.nim0.config
+				self.nimConfig0.cable.scan_provider.setValue(self.cable_provider_selection.value)
+				self.nimConfig0.cable.save()
+			except:
+				print "[CableScan] Slot 0 is not DVB-C!"
+				
+			try:
+				self.nim1 = nimmanager.nim_slots[1]
+				self.nimConfig1 = self.nim1.config
+				self.nimConfig1.cable.scan_provider.setValue(self.cable_provider_selection.value)
+				self.nimConfig1.cable.save()
+			except:
+				print "[CableScan] Slot 1 is not DVB-C !"
+#SOGNO
 			self.scanList = []
 			self.known_networks = set()
 			self.nim_iter=0
