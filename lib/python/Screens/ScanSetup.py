@@ -1064,15 +1064,6 @@ class ScanSimple(ConfigListScreen, Screen, CableTransponderSearchSupport):
 		# we save the config elements to use them on keyGo
 		self.nim_enable = [ ]
 
-		if len(nims_to_scan):
-			self.scan_clearallservices = ConfigSelection(default = "yes", choices = [("no", _("no")), ("yes", _("yes")), ("yes_hold_feeds", _("yes (keep feeds)"))])
-			self.list.append(getConfigListEntry(_("Clear before scan"), self.scan_clearallservices))
-
-			for nim in nims_to_scan:
-				nimconfig = ConfigYesNo(default = True)
-				nimconfig.nim_index = nim.slot
-				self.nim_enable.append(nimconfig)
-				self.list.append(getConfigListEntry(_("Scan ") + nim.slot_name + " (" + nim.friendly_type + ")", nimconfig))
 # SOGNO
 		self.cable_providers = [ ] 
 		n = 0
@@ -1080,10 +1071,17 @@ class ScanSimple(ConfigListScreen, Screen, CableTransponderSearchSupport):
 			 self.cable_providers.append((str(n), x[0]))
 			 n += 1
 			 
-		self.cable_provider_selection = ConfigSelection(default = "0", choices = self.cable_providers)
-		if nim.isCompatible("DVB-C"):
-			self.list.append(getConfigListEntry(_("Cable provider:"), self.cable_provider_selection))
-
+		if len(nims_to_scan):
+			self.scan_clearallservices = ConfigSelection(default = "yes", choices = [("no", _("no")), ("yes", _("yes")), ("yes_hold_feeds", _("yes (keep feeds)"))])
+			self.list.append(getConfigListEntry(_("Clear before scan"), self.scan_clearallservices))
+			self.cable_provider_selection = ConfigSelection(default = "0", choices = self.cable_providers)
+			for nim in nims_to_scan:
+				nimconfig = ConfigYesNo(default = True)
+				nimconfig.nim_index = nim.slot
+				self.nim_enable.append(nimconfig)
+				self.list.append(getConfigListEntry(_("Scan ") + nim.slot_name + " (" + nim.friendly_type + ")", nimconfig))
+				if nim.isCompatible("DVB-C"):
+					self.list.append(getConfigListEntry(_("Cable provider:"), self.cable_provider_selection))
 # SOGNO
 		ConfigListScreen.__init__(self, self.list)
 		self["header"] = Label(_("Automatic scan"))
