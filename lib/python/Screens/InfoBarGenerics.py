@@ -274,7 +274,7 @@ class InfoBarShowHide(InfoBarScreenSaver):
 			x(False)
 
 	def keyHide(self):
-		if self.session.pipshown and "popup" in config.usage.pip_hideOnExit.value:
+		if self.__state == self.STATE_HIDDEN and self.session.pipshown and "popup" in config.usage.pip_hideOnExit.value:
 			if config.usage.pip_hideOnExit.value == "popup":
 				self.session.openWithCallback(self.hidePipOnExitCallback, MessageBox, _("Disable Picture in Picture"), simple=True)
 			else:
@@ -526,7 +526,6 @@ class InfoBarChannelSelection:
 	def __init__(self):
 		#instantiate forever
 		self.servicelist = self.session.instantiateDialog(ChannelSelection)
-		self.oldStyleControls = False
 
 		if config.misc.initialchannelselection.value:
 			self.onShown.append(self.firstRun)
@@ -649,7 +648,7 @@ class InfoBarChannelSelection:
 		return config.usage.zap_with_ch_buttons.value and _("Switch to next channel") or _("Open service list")
 
 	def getKeyChannelDownHelptext(self):
-		return config.usage.zap_with_ch_buttons.value and _("Switch to previous channel") or ("Open service list")
+		return config.usage.zap_with_ch_buttons.value and _("Switch to previous channel") or _("Open service list")
 
 	def switchChannelUp(self):
 		if "keep" not in config.usage.servicelist_cursor_behavior.value:
@@ -1219,10 +1218,10 @@ class InfoBarSeek:
 
 		self["SeekActions"] = InfoBarSeekActionMap(self, actionmap,
 			{
-				"playpauseService": self.playpauseService,
+				"playpauseService": (self.playpauseService, _("Pauze/Continue playback")),
 				"pauseService": (self.pauseService, _("Pause playback")),
 				"unPauseService": (self.unPauseService, _("Continue playback")),
-
+				"okButton": (self.okButton, _("Continue playback")),
 				"seekFwd": (self.seekFwd, _("Seek forward")),
 				"seekFwdManual": (self.seekFwdManual, _("Seek forward (enter time)")),
 				"seekBack": (self.seekBack, _("Seek backward")),
@@ -1373,6 +1372,12 @@ class InfoBarSeek:
 		else:
 			SystemInfo["SeekStatePlay"] = False
 			self.pauseService()
+
+	def okButton(self):
+		if self.seekstate == self.SEEK_STATE_PAUSE:
+			self.pauseService()
+		else:
+			return 0
 
 	def pauseService(self):
 		if self.seekstate == self.SEEK_STATE_PAUSE:
@@ -1798,6 +1803,9 @@ class InfoBarTimeshift:
 		#state = self.seekstate
 		self.activateTimeshiftEnd(False)
 
+	def callServiceStarted(self):
+		self.__serviceStarted()
+
 	def __seekableStatusChanged(self):
 		self["TimeshiftActivateActions"].setEnabled(not self.isSeekable() and self.timeshiftEnabled())
 		state = self.getSeek() is not None and self.timeshiftEnabled()
@@ -2040,6 +2048,7 @@ class InfoBarPiP:
 				self.session.pip.servicePath = currentServicePath
 
 	def showPiP(self):
+		self.lastPiPServiceTimeoutTimer.stop()
 		if self.session.pipshown:
 			slist = self.servicelist
 			if slist and slist.dopipzap:
