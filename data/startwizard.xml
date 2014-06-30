@@ -64,6 +64,14 @@ self.condition = len(nimmanager.nim_slots) > 0 and not nimmanager.nim_slots[0].e
 self.clearSelectedKeys()
 self.selectKey("LEFT")
 self.selectKey("RIGHT")
+from Components.NimManager import nimmanager
+import os
+if nimmanager.nim_slots[0].isCompatible("DVB-C") and (nimmanager.nim_slots[1].isCompatible("DVB-T") or nimmanager.nim_slots[1].isCompatible("DVB-C")):
+	os.system("opkg remove enigma2-plugin-settings-*")
+	from enigma import eDVBDB
+	eDVBDB = eDVBDB.getInstance()
+	eDVBDB.reloadServicelist()
+	eDVBDB.reloadBouquets()
 			</code>
 		</step>
 		<step id="nimb">
