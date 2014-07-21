@@ -1,5 +1,6 @@
 from Tools.Profile import profile
 from Tools.BoundFunction import boundFunction
+from enigma import eServiceReference
 
 # workaround for required config entry dependencies.
 import Screens.MovieSelection
@@ -55,7 +56,6 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 			}, prio=2)
 
 		self.allowPiP = True
-		self.lastMoviePlayerService = None
 
 		for x in HelpableScreen, \
 				InfoBarBase, InfoBarShowHide, \
@@ -125,7 +125,7 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 
 	def showMovies(self, defaultRef=None):
 		self.lastservice = self.session.nav.getCurrentlyPlayingServiceOrGroup()
-		self.session.openWithCallback(self.movieSelected, Screens.MovieSelection.MovieSelection, defaultRef or self.lastMoviePlayerService, timeshiftEnabled = self.timeshiftEnabled())
+		self.session.openWithCallback(self.movieSelected, Screens.MovieSelection.MovieSelection, defaultRef or eServiceReference(config.usage.last_movie_played.value), timeshiftEnabled = self.timeshiftEnabled())
 
 	def movieSelected(self, service):
 		ref = self.lastservice
@@ -134,11 +134,7 @@ class InfoBar(InfoBarBase, InfoBarShowHide,
 			if ref and not self.session.nav.getCurrentlyPlayingServiceOrGroup():
 				self.session.nav.playService(ref)
 		else:
-			self.session.openWithCallback(self.MoviePlayerCallback, MoviePlayer, service, slist=self.servicelist, lastservice=ref, infobar=self)
-
-	def MoviePlayerCallback(self, reply=None):
-		if reply:
-			self.lastMoviePlayerService = reply
+			self.session.open(MoviePlayer, service, slist=self.servicelist, lastservice=ref, infobar=self)
 
 	def showSetup(self):
 		from Screens.Menu import MainMenu, mdom
@@ -279,6 +275,8 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 		if not config.movielist.stop_service.value:
 			Screens.InfoBar.InfoBar.instance.callServiceStarted()
 		self.session.nav.playService(self.lastservice)
+		config.usage.last_movie_played.value = self.cur_service.toString()
+		config.usage.last_movie_played.save()
 
 	def handleLeave(self, how):
 		self.is_closing = True
@@ -358,7 +356,7 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 						Screens.MovieSelection.moveServiceFiles(ref, trash)
 						# Moved to trash, okay
 						if answer == "quitanddelete":
-							self.close(self.cur_service)
+							self.close()
 						else:
 							self.movielistAgain()
 						return
@@ -377,13 +375,13 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 			elif answer in ("quitanddeleteconfirmed", "deleteandmovielistconfirmed"):
 				offline = serviceHandler.offlineOperations(ref)
 				if offline.deleteFromDisk(0):
-					self.session.openWithCallback(boundFunction(self.close, self.cur_service), MessageBox, _("You cannot delete this!"), MessageBox.TYPE_ERROR)
+					self.session.openWithCallback(self.close, MessageBox, _("You cannot delete this!"), MessageBox.TYPE_ERROR)
 					if answer == "deleteandmovielistconfirmed":
 						self.movielistAgain()
 					return
 
 		if answer in ("quit", "quitanddeleteconfirmed"):
-			self.close(self.cur_service)
+			self.close()
 		elif answer in ("movielist", "deleteandmovielistconfirmed"):
 			ref = self.session.nav.getCurrentlyPlayingServiceOrGroup()
 			self.returning = True
@@ -578,7 +576,7 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 			self.session.nav.playService(service)
 			self.returning = False
 		elif self.returning:
-			self.close(self.cur_service)
+			self.close()
 		else:
 			self.is_closing = False
 			ref = self.playingservice
@@ -605,4 +603,4 @@ class MoviePlayer(InfoBarBase, InfoBarShowHide, InfoBarMenu, InfoBarSeek, InfoBa
 		Notifications.AddPopup(text = _("%s/%s: %s") % (index, n, self.ref2HumanName(ref)), type = MessageBox.TYPE_INFO, timeout = 5)
 
 	def ref2HumanName(self, ref):
-		return enigma.eServiceCenter.getInstance().info(ref).getName(ref)
+		return enigma.eServiceCenter.getInstance().info(ref).getName(ref)		
