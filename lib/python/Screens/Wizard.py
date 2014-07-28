@@ -180,6 +180,9 @@ class Wizard(Screen):
 		self.timeoutTimer = eTimer()
 		self.timeoutTimer.callback.append(self.timeoutCounterFired)
 
+		self.memorytestmode = 0
+		self.testkey = 0
+		
 		self["text"] = Label()
 
 		if showConfig:
@@ -232,7 +235,8 @@ class Wizard(Screen):
 			"7": self.keyNumberGlobal,
 			"8": self.keyNumberGlobal,
 			"9": self.keyNumberGlobal,
-			"0": self.keyNumberGlobal
+			"0": self.keyNumberGlobal,
+			"test":self.testmode
 		}, -1)
 
 		self["VirtualKB"] = NumberActionMap(["VirtualKeyboardActions"],
@@ -377,6 +381,13 @@ class Wizard(Screen):
 					self.configInstance.run()
 		self.finished()
 
+	def testmode(self):
+		try:
+			from Screens.TestMenu import TestMenu
+			self.session.open(TestMenu)
+		except:
+			pass
+		      
 	def keyNumberGlobal(self, number):
 		if (self.wizard[self.currStep]["config"]["screen"] != None):
 			self.configInstance.keyNumberGlobal(number)
