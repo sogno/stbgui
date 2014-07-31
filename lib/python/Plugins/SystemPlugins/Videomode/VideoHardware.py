@@ -54,7 +54,7 @@ class VideoHardware:
 								"60Hz":		{ 60: "1080i" },
 								"multi":	{ 50: "1080i50", 60: "1080i" } }
 
-	if chipset.find('7405') != -1 or chipset.find('7335') != -1 or chipset.find('7403') != -1:
+	if chipset.find('7413') != -1 or chipset.find('7405') != -1 or chipset.find('7335') != -1 or chipset.find('7403') != -1:
 		rates["1080p"] =		{ "30Hz":		{ 30: "1080p30" },
 									"25Hz":		{ 25: "1080p25" },
 									"24Hz":		{ 24: "1080p24" }}
