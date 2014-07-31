@@ -86,14 +86,10 @@ class VideoHardware:
 	modes["Scart"] = ["PAL", "NTSC", "Multi"]
 	modes["DVI-PC"] = ["PC"]
 
-	if  chipset.find('7335') != -1 or chipset.find('7358') != -1 or chipset.find('7356') != -1 or chipset.find('7403') != -1:
-		if not about.getHardwareTypeString().lower() == "sogno-8800hd":
-			modes["YPbPr"] = ["1080i", "1080p", "720p", "576p", "480p", "576i", "480i"]
+	if  chipset.find('7413') != -1 or chipset.find('7335') != -1 or chipset.find('7358') != -1 or chipset.find('7356') != -1 or chipset.find('7403') != -1:
 		modes["DVI"] = ["1080i", "1080p", "720p", "576p", "480p", "576i", "480i"]
 		widescreen_modes = set(["720p", "1080i", "1080p"])
 	else:
-		if not about.getHardwareTypeString().lower() == "sogno-8800hd":
-			modes["YPbPr"] = ["720p", "1080i", "576p", "480p", "576i", "480i"]
 		modes["DVI"] = ["720p", "1080i", "576p", "480p", "576i", "480i"]
 		widescreen_modes = set(["720p", "1080i"])
 
