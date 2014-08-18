@@ -171,8 +171,14 @@ class ChannelContextMenu(Screen):
 								append_when_current_valid(current, menu, (_("play as picture in picture"), self.showServiceInPiP), level=0, key="blue")
 					append_when_current_valid(current, menu, (_("find currently played service"), self.findCurrentlyPlayed), level=0, key="3")
 				else:
-					if 'FROM SATELLITES' in current_root.getPath():
-						append_when_current_valid(current, menu, (_("remove selected satellite"), self.removeSatelliteServices), level=0)
+					if 'FROM SATELLITES' in current_root.getPath() and current and _("Services") in eServiceCenter.getInstance().info(current).getName(current):
+						unsigned_orbpos = current.getUnsignedData(4) >> 16
+						if unsigned_orbpos == 0xFFFF:
+							append_when_current_valid(current, menu, (_("remove cable services"), self.removeSatelliteServices), level = 0)
+						elif unsigned_orbpos == 0xEEEE:
+							append_when_current_valid(current, menu, (_("remove terrestrial services"), self.removeSatelliteServices), level = 0)
+						else:
+							append_when_current_valid(current, menu, (_("remove selected satellite"), self.removeSatelliteServices), level = 0)
 					if haveBouquets:
 						if not self.inBouquet and not "PROVIDERS" in current_sel_path:
 							append_when_current_valid(current, menu, (_("copy to bouquets"), self.copyCurrentToBouquetList), level=0)
@@ -186,6 +192,11 @@ class ChannelContextMenu(Screen):
 				if current_root and ("flags == %d" %(FLAG_SERVICE_NEW_FOUND)) in current_root.getPath():
 					append_when_current_valid(current, menu, (_("remove new found flag"), self.removeNewFoundFlag), level=0)
 			else:
+					if self.parentalControlEnabled:
+						if self.parentalControl.getProtectionLevel(csel.getCurrentSelection().toCompareString()) == -1:
+							append_when_current_valid(current, menu, (_("add bouquet to parental protection"), boundFunction(self.addParentalProtection, csel.getCurrentSelection())), level=0)
+						else:
+							append_when_current_valid(current, menu, (_("remove bouquet from parental protection"), boundFunction(self.removeParentalProtection, csel.getCurrentSelection())), level=0)
 					menu.append(ChoiceEntryComponent(text=(_("add bouquet"), self.showBouquetInputBox)))
 					append_when_current_valid(current, menu, (_("rename entry"), self.renameEntry), level=0, key="2")
 					append_when_current_valid(current, menu, (_("remove entry"), self.removeBouquet), level=0, key="8")
@@ -336,20 +347,12 @@ class ChannelContextMenu(Screen):
 			self.close(False)
 
 	def removeSatelliteServices(self):
-		curpath = self.csel.getCurrentSelection().getPath()
-		idx = curpath.find("satellitePosition == ")
-		if idx != -1:
-			tmp = curpath[idx+21:]
-			idx = tmp.find(')')
-			if idx != -1:
-				satpos = int(tmp[:idx])
-				eDVBDB.getInstance().removeServices(-1, -1, -1, satpos)
+		self.csel.removeSatelliteServices()
 		self.close()
 
 	def copyCurrentToBouquetList(self):
 		self.csel.copyCurrentToBouquetList()
 		self.close()
-
 
 	def removeBouquet(self):
 		if self.csel.servicelist.getCurrent() and self.csel.servicelist.getCurrent().valid() and not self.csel.movemode:
@@ -758,6 +761,42 @@ class ChannelSelectionEdit:
 		except OSError:
 			print "error during remove of", filename
 
+	def removeSatelliteServices(self):
+		current = self.getCurrentSelection()
+		unsigned_orbpos = current.getUnsignedData(4) >> 16
+		if unsigned_orbpos == 0xFFFF:
+			messageText = _("Are you sure to remove all cable services?")
+		elif unsigned_orbpos == 0xEEEE:
+			messageText = _("Are you sure to remove all terrestrial services?")
+		else:
+			if unsigned_orbpos > 1800:
+				unsigned_orbpos = 3600 - unsigned_orbpos
+				direction = _("W")
+			else:
+				direction = _("E")
+			messageText = _("Are you sure to remove all %d.%d\xc2\xb0 %s services?") % (unsigned_orbpos/10, unsigned_orbpos%10, direction)
+		self.session.openWithCallback(self.removeSatelliteServicesCallback, MessageBox, messageText)
+
+	def removeSatelliteServicesCallback(self, answer):
+		if answer:
+			current = self.getCurrentSelection()
+			unsigned_orbpos = current.getUnsignedData(4) >> 16
+			if unsigned_orbpos == 0xFFFF:
+				eDVBDB.getInstance().removeServices(int("0xFFFF0000", 16) - 0x100000000)
+			elif unsigned_orbpos == 0xEEEE:
+				eDVBDB.getInstance().removeServices(int("0xEEEE0000", 16) - 0x100000000)
+			else:
+				curpath = current.getPath()
+				idx = curpath.find("satellitePosition == ")
+				if idx != -1:
+					tmp = curpath[idx + 21:]
+					idx = tmp.find(')')
+					if idx != -1:
+						satpos = int(tmp[:idx])
+						eDVBDB.getInstance().removeServices(-1, -1, -1, satpos)
+			refreshServiceList()
+			hasattr(self.session, 'showSatellites') and self.showSatellites()
+
 #  multiple marked entry stuff ( edit mode, later multiepg selection )
 	def startMarkedEdit(self, type):
 		self.savedPath = self.servicePath[:]
@@ -935,9 +974,9 @@ class ChannelSelectionBase(Screen):
 		self.history = [ ]
 		self.rootChanged = False
 		self.startRoot = None
-		self.zapNumber = ""
-		self.clearZapNumberTimer = eTimer()
-		self.clearZapNumberTimer.callback.append(self.clearZapNumber)
+		self.selectionNumber = ""
+		self.clearNumberSelectionNumberTimer = eTimer()
+		self.clearNumberSelectionNumberTimer.callback.append(self.clearNumberSelectionNumber)
 
 		self.mode = MODE_TV
 		self.dopipzap = False
@@ -957,6 +996,7 @@ class ChannelSelectionBase(Screen):
 				"gotAsciiCode": self.keyAsciiCode,
 				"keyLeft": self.keyLeft,
 				"keyRight": self.keyRight,
+				"keyRecord": self.keyRecord,
 				"1": self.keyNumberGlobal,
 				"2": self.keyNumberGlobal,
 				"3": self.keyNumberGlobal,
@@ -1298,6 +1338,11 @@ class ChannelSelectionBase(Screen):
 		else:
 			self.servicelist.instance.moveSelection(self.servicelist.instance.pageDown)
 
+	def keyRecord(self):
+		ref = self.getCurrentSelection()
+		if ref and not(ref.flags & (eServiceReference.isMarker|eServiceReference.isDirectory)):
+			Screens.InfoBar.InfoBar.instance.instantRecord(serviceRef=ref)
+
 	def showFavourites(self):
 		if not self.pathChangeDisabled:
 			if not self.preEnterPath(self.bouquet_rootstr):
@@ -1310,41 +1355,41 @@ class ChannelSelectionBase(Screen):
 						self.enterPath(self.bouquet_root)
 
 	def keyNumber0(self, number):
-		if len(self.servicePath) > 1 and not self.zapNumber:
+		if len(self.servicePath) > 1 and not self.selectionNumber:
 			self.keyGoUp()
 		else:
 			self.keyNumberGlobal(number)
 
 	def keyNumberGlobal(self, number):
 		if self.isBasePathEqual(self.bouquet_root):
-			self.numberZapActions(number)
+			self.numberSelectionActions(number)
 		else:
 			current_root = self.getRoot()
 			if  current_root and 'FROM BOUQUET "bouquets.' in current_root.getPath():
-				self.numberZapActions(number)
+				self.numberSelectionActions(number)
 			else:
 				unichar = self.numericalTextInput.getKey(number)
 				charstr = unichar.encode("utf-8")
 				if len(charstr) == 1:
 					self.servicelist.moveToChar(charstr[0])
 
-	def numberZapActions(self, number):
+	def numberSelectionActions(self, number):
 		if not self.movemode:
-			if len(self.zapNumber)>4:
-				self.clearZapNumber()
-			self.zapNumber = self.zapNumber + str(number)
-			ref, bouquet = Screens.InfoBar.InfoBar.instance.searchNumber(int(self.zapNumber), bouquet=self.getRoot())
+			if len(self.selectionNumber)>4:
+				self.clearNumberSelectionNumber()
+			self.selectionNumber = self.selectionNumber + str(number)
+			ref, bouquet = Screens.InfoBar.InfoBar.instance.searchNumber(int(self.selectionNumber), bouquet=self.getRoot())
 			if ref:
 				if not ref.flags & eServiceReference.isMarker:
 					self.enterUserbouquet(bouquet, save_root=False)
 					self.servicelist.setCurrent(ref)
-				self.clearZapNumberTimer.start(1000, True)
+				self.clearNumberSelectionNumberTimer.start(1000, True)
 			else:
-				self.clearZapNumber()
+				self.clearNumberSelectionNumber()
 
-	def clearZapNumber(self):
-		self.clearZapNumberTimer.stop()
-		self.zapNumber = ""
+	def clearNumberSelectionNumber(self):
+		self.clearNumberSelectionNumberTimer.stop()
+		self.selectionNumber = ""
 
 	def keyAsciiCode(self):
 		unichar = unichr(getPrevAsciiCode())
@@ -1575,8 +1620,9 @@ class ChannelSelection(ChannelSelectionBase, ChannelSelectionEdit, ChannelSelect
 		if self.movemode:
 			self.toggleMoveMarked()
 		elif (ref.flags & eServiceReference.flagDirectory) == eServiceReference.flagDirectory:
-			self.enterPath(ref)
-			self.gotoCurrentServiceOrProvider(ref)
+			if Components.ParentalControl.parentalControl.isServicePlayable(ref, self.bouquetParentalControlCallback, self.session):
+				self.enterPath(ref)
+				self.gotoCurrentServiceOrProvider(ref)
 		elif self.bouquet_mark_edit != OFF:
 			if not (self.bouquet_mark_edit == EDIT_ALTERNATIVES and ref.flags & eServiceReference.isGroup):
 				self.doMark()
@@ -1592,6 +1638,10 @@ class ChannelSelection(ChannelSelectionBase, ChannelSelectionEdit, ChannelSelect
 					self.startRoot = None
 					self.correctChannelNumber()
 					self.close(ref)
+
+	def bouquetParentalControlCallback(self, ref):
+		self.enterPath(ref)
+		self.gotoCurrentServiceOrProvider(ref)
 
 	def togglePipzap(self):
 		assert(self.session.pip)
@@ -1755,7 +1805,7 @@ class ChannelSelection(ChannelSelectionBase, ChannelSelectionEdit, ChannelSelect
 		if path and path != self.lastroot.value:
 			if self.mode == MODE_RADIO and 'FROM BOUQUET "bouquets.tv"' in path:
 				self.setModeTv()
-			elif 'FROM BOUQUET "bouquets.radio"' in path:
+			elif self.mode == MODE_TV and 'FROM BOUQUET "bouquets.radio"' in path:
 				self.setModeRadio()
 			self.lastroot.value = path
 			self.lastroot.save()
@@ -1880,8 +1930,7 @@ class ChannelSelection(ChannelSelectionBase, ChannelSelectionEdit, ChannelSelect
 			oldref = self.session.nav.currentlyPlayingServiceReference
 			if oldref and selected_ref == oldref or (oldref != current_ref and selected_ref == current_ref):
 				self.session.nav.currentlyPlayingServiceOrGroup = selected_ref
-				from Components.Renderer.ChannelNumber import doRenumber
-				doRenumber()
+				self.session.nav.pnav.navEvent(iPlayableService.evStart)
 		if self.dopipzap:
 			if tmp_mode == "tv":
 				self.setModeTv()
@@ -2068,6 +2117,9 @@ class SimpleChannelSelection(ChannelSelectionBase):
 
 	def saveRoot(self):
 		pass
+
+	def keyRecord(self):
+		return 0
 
 	def channelSelected(self): # just return selected service
 		ref = self.getCurrentSelection()
