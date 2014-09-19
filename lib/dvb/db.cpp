@@ -637,6 +637,19 @@ void eDVBDB::saveServicelist(const char *file)
 			case 1712000: bandwidth = eDVBFrontendParametersTerrestrial::Bandwidth_1_712MHz; break;
 			case 10000000: bandwidth = eDVBFrontendParametersTerrestrial::Bandwidth_10MHz; break;
 			}
+			if (ter.system == eDVBFrontendParametersTerrestrial::System_DVB_T_T2)
+			{
+				/*
+				 * System_DVB_T_T2 (T with fallback to T2) is used only when 'system' is not (yet) specified.
+				 * When storing a transponder with 'system' still equalling System_DVB_T_T2,
+				 * there has been no fallback to T2 (in which case 'system' would have been set to
+				 * System_DVB_T2).
+				 * So we are dealing with a T transponder, store it with System_DVB_T.
+				 * (fallback to T2 is only used while scanning, System_DVB_T_T2 should never be used for actual
+				 * transponders in the lamedb)
+				 */
+				ter.system = eDVBFrontendParametersTerrestrial::System_DVB_T;
+			}
 			fprintf(f, "\tt %d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d:%d\n",
 				ter.frequency, bandwidth, ter.code_rate_HP,
 				ter.code_rate_LP, ter.modulation, ter.transmission_mode,
@@ -743,11 +756,53 @@ void eDVBDB::loadBouquet(const char *path)
 	std::list<eServiceReference> &list = bouquet.m_services;
 	list.clear();
 
-	std::string p = eEnv::resolve("${sysconfdir}/enigma2/");
-	p+=path;
-	eDebug("loading bouquet... %s", p.c_str());
-	CFile fp(p.c_str(), "rt");
-	int entries=0;
+	int entries = 0;
+	std::string enigma_conf = eEnv::resolve("${sysconfdir}/enigma2/");
+	std::string file_path;
+	bool found = false;
+
+	static const char *const searchpath[] = { "alternatives", "bouquets", "", 0 };
+
+	for(int index = 0; searchpath[index]; index++)
+	{
+		file_path = enigma_conf + searchpath[index] + "/" + path;
+
+		if (!access(file_path.c_str(), R_OK))
+		{
+			found = true;
+			break;
+		}
+	}
+
+	if(!found)
+	{
+		eDebug("can't open %s: %m", (enigma_conf + ".../" + path).c_str());
+		if (!strcmp(path, "bouquets.tv"))
+		{
+			file_path = enigma_conf + path;
+
+			eDebug("recreate bouquets.tv");
+			bouquet.m_bouquet_name="Bouquets (TV)";
+			bouquet.flushChanges();
+		}
+		else
+		{
+			if (!strcmp(path, "bouquets.radio"))
+			{
+				file_path = enigma_conf + path;
+
+				eDebug("recreate bouquets.radio");
+				bouquet.m_bouquet_name="Bouquets (Radio)";
+				bouquet.flushChanges();
+			}
+			else
+				file_path = "";
+		}
+	}
+
+	eDebug("loading bouquet... %s", file_path.c_str());
+	CFile fp(file_path, "rt");
+
 	if (fp)
 	{
 		size_t linesize = 256;
@@ -823,22 +878,7 @@ void eDVBDB::loadBouquet(const char *path)
 		}
 		free(line);
 	}
-	else
-	{
-		eDebug("can't open %s: %m", p.c_str());
-		if (!strcmp(path, "bouquets.tv"))
-		{
-			eDebug("recreate bouquets.tv");
-			bouquet.m_bouquet_name="Bouquets (TV)";
-			bouquet.flushChanges();
-		}
-		else if (!strcmp(path, "bouquets.radio"))
-		{
-			eDebug("recreate bouquets.radio");
-			bouquet.m_bouquet_name="Bouquets (Radio)";
-			bouquet.flushChanges();
-		}
-	}
+
 	if (userbouquetsfiles.size())
 	{
 		for(unsigned int i=0; i<userbouquetsfiles.size(); ++i)
