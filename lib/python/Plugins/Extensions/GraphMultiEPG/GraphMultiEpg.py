@@ -61,6 +61,7 @@ possibleAlignmentChoices = [
 config.misc.graph_mepg.event_alignment = ConfigSelection(default = possibleAlignmentChoices[0][0], choices = possibleAlignmentChoices)
 config.misc.graph_mepg.servicename_alignment = ConfigSelection(default = possibleAlignmentChoices[0][0], choices = possibleAlignmentChoices)
 config.misc.graph_mepg.extension_menu = ConfigYesNo(default = False)
+config.misc.graph_mepg.silent_bouquet_change = ConfigYesNo(default = True)
 
 listscreen = config.misc.graph_mepg.default_mode.value
 
@@ -93,7 +94,22 @@ class EPGList(HTMLComponent, GUIComponent):
 				 LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/zaprecclock_pre.png')),
 				 LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/zaprecclock.png')),
 				 LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/zaprecclock_prepost.png')),
-				 LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/zaprecclock_post.png')) ]
+				 LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/zaprecclock_post.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repepgclock_add.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repepgclock_pre.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repepgclock.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repepgclock_prepost.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repepgclock_post.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzapclock_add.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzapclock_pre.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzapclock.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzapclock_prepost.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzapclock_post.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzaprecclock_add.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzaprecclock_pre.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzaprecclock.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzaprecclock_prepost.png')),
+				LoadPixmap(cached=True, path=resolveFilename(SCOPE_CURRENT_SKIN, 'skin_default/icons/repzaprecclock_post.png')) ]
 		self.time_base = None
 		self.time_epoch = time_epoch
 		self.list = None
@@ -236,12 +252,17 @@ class EPGList(HTMLComponent, GUIComponent):
 		self.setCurrentIndex(newIdx)
 
 	def setCurrentIndex(self, index):
-		if self.instance is not None:
+		if self.instance:
 			self.instance.moveSelectionTo(index)
 
 	def moveTo(self, dir):
-		if self.instance is not None:
+		if self.instance:
 			self.instance.moveSelection(dir)
+
+	def moveToFromEPG(self, dir, epg):
+		self.moveTo(dir==1 and eListbox.moveDown or eListbox.moveUp)
+		if self.cur_service:
+			epg.setService(ServiceReference(self.cur_service[0]))
 
 	def getCurrent(self):
 		if self.cur_service is None:
@@ -469,7 +490,7 @@ class EPGList(HTMLComponent, GUIComponent):
 				if selected and self.select_rect.x == xpos + left and self.selEvPix:
 					bgpng = self.selEvPix
 					backColorSel = None
-				elif rec is not None and rec[1][-1] in (2, 12):
+				elif rec is not None and rec[1][-1] in (2, 12, 17, 27):
 					bgpng = self.recEvPix
 					foreColor = self.foreColorRec
 					backColor = self.backColorRec
@@ -978,7 +999,7 @@ class GraphMultiEPG(Screen, HelpableScreen):
 	def openSingleServiceEPG(self):
 		ref = self["list"].getCurrent()[1].ref.toString()
 		if ref:
-			self.session.open(EPGSelection, ref)
+			self.session.openWithCallback(self.doRefresh, EPGSelection, ref, self.zapFunc, serviceChangeCB=self["list"].moveToFromEPG)
 
 	def openMultiServiceEPG(self):
 		if self.services:

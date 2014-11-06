@@ -423,6 +423,7 @@ extern const char *getMachineName();
 extern const char *getImageVersionString();
 extern const char *getBuildVersionString();
 extern const char *getDriverDateString();
+extern const char *getGStreamerVersionString();
 extern void dump_malloc_stats(void);
 %}
 
@@ -439,6 +440,7 @@ extern const char *getMachineName();
 extern const char *getImageVersionString();
 extern const char *getBuildVersionString();
 extern const char *getDriverDateString();
+extern const char *getGStreamerVersionString();
 extern void dump_malloc_stats(void);
 
 %include <lib/python/python_console.i>

@@ -22,7 +22,7 @@ from Screens import ScreenSaver
 from Screens import Standby
 from Screens.ChoiceBox import ChoiceBox
 from Screens.Dish import Dish
-from Screens.EventView import EventViewEPGSelect, EventViewSimple, EventViewRecording
+from Screens.EventView import EventViewEPGSelect, EventViewSimple
 from Screens.InputBox import InputBox
 from Screens.MessageBox import MessageBox
 from Screens.MinuteInput import MinuteInput
@@ -329,9 +329,7 @@ class InfoBarShowHide(InfoBarScreenSaver):
 
 	def toggleShow(self):
 		if self.__state == self.STATE_HIDDEN:
-			self.show()
-			if self.secondInfoBarScreen:
-				self.secondInfoBarScreen.hide()
+			self.showFirstInfoBar()
 		else:
 			self.showSecondInfoBar()
 
@@ -343,6 +341,14 @@ class InfoBarShowHide(InfoBarScreenSaver):
 			self.show()
 			self.secondInfoBarScreen.show()
 			self.startHideTimer()
+		else:
+			self.hide()
+			self.hideTimer.stop()
+
+	def showFirstInfoBar(self):
+		if self.__state == self.STATE_HIDDEN or self.secondInfoBarScreen and self.secondInfoBarScreen.shown:
+			self.secondInfoBarScreen and self.secondInfoBarScreen.hide()
+			self.show()
 		else:
 			self.hide()
 			self.hideTimer.stop()
@@ -991,23 +997,20 @@ class InfoBarEPG:
 		self.serviceSel = None
 
 	def openSingleServiceEPG(self):
-		from Components.ServiceEventTracker import InfoBarCount
-		if InfoBarCount > 1:
-			self.openMultiServiceEPG(False)
-		else:
-			ref = self.session.nav.getCurrentlyPlayingServiceOrGroup()
-			if ref:
-				if self.servicelist.getMutableList() is not None: # bouquet in channellist
-					current_path = self.servicelist.getRoot()
-					services = self.getBouquetServices(current_path)
-					self.serviceSel = SimpleServicelist(services)
-					if self.serviceSel.selectService(ref):
-						self.epg_bouquet = current_path
-						self.session.openWithCallback(self.SingleServiceEPGClosed, EPGSelection, ref, self.zapToService, serviceChangeCB = self.changeServiceCB)
-					else:
-						self.session.openWithCallback(self.SingleServiceEPGClosed, EPGSelection, ref)
+		ref = self.servicelist.lastservice.value
+		ref = ref and eServiceReference(ref)
+		if ref:
+			if self.servicelist.getMutableList(): # bouquet in channellist
+				current_path = self.servicelist.getRoot()
+				services = self.getBouquetServices(current_path)
+				self.serviceSel = SimpleServicelist(services)
+				if self.serviceSel.selectService(ref):
+					self.epg_bouquet = current_path
+					self.session.openWithCallback(self.SingleServiceEPGClosed, EPGSelection, ref, self.zapToService, serviceChangeCB=self.changeServiceCB)
 				else:
-					self.session.open(EPGSelection, ref)
+					self.session.openWithCallback(self.SingleServiceEPGClosed, EPGSelection, ref)
+			else:
+				self.session.open(EPGSelection, ref)
 
 	def runPlugin(self, plugin):
 		plugin(session = self.session, servicelist = self.servicelist)
@@ -1068,7 +1071,7 @@ class InfoBarEPG:
 			if ptr:
 				epglist.append(ptr)
 			if epglist:
-				self.session.open(EventViewRecording, epglist[0], ServiceReference(ref), self.eventViewCallback, self.openMultiServiceEPG, self.openSimilarList)
+				self.session.open(EventViewEPGSelect, epglist[0], ServiceReference(ref), self.eventViewCallback, self.openSingleServiceEPG, self.openMultiServiceEPG, self.openSimilarList)
 		else:
 			ref = self.session.nav.getCurrentlyPlayingServiceOrGroup()
 			self.getNowNext()
@@ -2106,10 +2109,12 @@ class InfoBarPiP:
 			pipref = self.session.pip.getCurrentService()
 			if swapservice and pipref and pipref.toString() != swapservice.toString():
 				currentServicePath = self.servicelist.getCurrentServicePath()
+				currentBouquet = self.servicelist and self.servicelist.getRoot()
 				self.servicelist.setCurrentServicePath(self.session.pip.servicePath, doZap=False)
 				self.session.pip.playService(swapservice)
 				self.session.nav.playService(pipref, checkParentalControl=False, adjust=False)
 				self.session.pip.servicePath = currentServicePath
+				self.session.pip.servicePath[1] = currentBouquet
 				if self.servicelist.dopipzap:
 					# This unfortunately won't work with subservices
 					self.servicelist.setCurrentSelection(self.session.pip.getCurrentService())
@@ -2711,8 +2716,8 @@ class InfoBarCueSheetSupport:
 			if (last > 900000) and (not length[1]  or (last < length[1] - 900000)):
 				self.resume_point = last
 				l = last / 90000
-				if config.usage.on_movie_start.value == "ask" or not length[1]:
-					Notifications.AddNotificationWithCallback(self.playLastCB, MessageBox, _("Do you want to resume this playback?") + "\n" + (_("Resume position at %s") % ("%d:%02d:%02d" % (l/3600, l%3600/60, l%60))), timeout=10)
+				if "ask" in config.usage.on_movie_start.value or not length[1]:
+					Notifications.AddNotificationWithCallback(self.playLastCB, MessageBox, _("Do you want to resume this playback?") + "\n" + (_("Resume position at %s") % ("%d:%02d:%02d" % (l/3600, l%3600/60, l%60))), timeout=10, default="yes" in config.usage.on_movie_start.value)
 				elif config.usage.on_movie_start.value == "resume":
 # TRANSLATORS: The string "Resuming playback" flashes for a moment
 # TRANSLATORS: at the start of a movie, when the user has selected
