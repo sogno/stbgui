@@ -8,6 +8,7 @@
 #include <lib/base/eenv.h>
 #include <lib/base/eerror.h>
 #include <lib/base/estring.h>
+#include <lib/base/nconfig.h>
 #include <xmlccwrap/xmlccwrap.h>
 #include <dvbsi++/service_description_section.h>
 #include <dvbsi++/descriptor_tag.h>
@@ -196,6 +197,11 @@ bool eDVBService::isCrypted()
 
 int eDVBService::isPlayable(const eServiceReference &ref, const eServiceReference &ignore, bool simulate)
 {
+	bool remote_fallback_enabled = eConfigManager::getConfigBoolValue("config.usage.remote_fallback_enabled", false);
+
+	if(remote_fallback_enabled)
+		return(1);
+
 	ePtr<eDVBResourceManager> res_mgr;
 	if ( eDVBResourceManager::getInstance( res_mgr ) )
 		eDebug("isPlayble... no res manager!!");
@@ -891,7 +897,10 @@ void eDVBDB::loadBouquet(const char *path)
 				snprintf(buf, sizeof(buf), "1:7:2:0:0:0:0:0:0:0:FROM BOUQUET \"%s\" ORDER BY bouquet", userbouquetsfiles[i].c_str());
 			eServiceReference tmp(buf);
 			loadBouquet(userbouquetsfiles[i].c_str());
-			list.push_front(tmp);
+			if (!strcmp(userbouquetsfiles[i].c_str(), "userbouquet.LastScanned.tv"))
+				list.push_back(tmp);
+			else
+				list.push_front(tmp);
 			++entries;
 		}
 		bouquet.flushChanges();
