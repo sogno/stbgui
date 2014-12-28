@@ -15,12 +15,16 @@ def enumPlugins(filter_start=''):
 	for feed in enumFeeds():
 		package = None
 		try:
+<<<<<<< HEAD
 			try:
 				file = open('/var/lib/opkg/lists/%s' % feed, 'r')
 			except:
 				file = open('/var/lib/opkg/%s' % feed, 'r')
 				  
 			for line in file:
+=======
+			for line in open(os.path.join(listsDirPath(), feed), 'r'):
+>>>>>>> 13ed33f134bd677dce4a1d6945fb086a0f47602d
 				if line.startswith('Package:'):
 					package = line.split(":",1)[1].strip()
 					version = ''
@@ -48,6 +52,15 @@ def enumPlugins(filter_start=''):
 					package = None
 		except IOError:
 			pass
+
+def listsDirPath():
+	try:
+		for line in open('/etc/opkg/opkg.conf', "r"):
+			if line.startswith('lists_dir'):
+				return line.replace('\n','').split(' ')[2]
+	except IOError:
+		print "[opkg] cannot open %s" % path
+	return '/var/lib/opkg'
 
 if __name__ == '__main__':
 	for p in enumPlugins('enigma'):

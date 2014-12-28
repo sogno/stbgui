@@ -484,6 +484,15 @@
 		<key id="KEY_RECORD" mapto="keyRecord" flags="m"/>
 	</map>
 
+	<map context="ChannelSelectEPGActions">
+		<key id="KEY_INFO" mapto="info" flags="b"/>
+		<key id="KEY_INFO" mapto="info_long" flags="l"/>
+		<key id="KEY_EPG" mapto="epg" flags="b"/>
+		<key id="KEY_EPG" mapto="epg_long" flags="l"/>
+		<key id="KEY_INFO" mapto="showEPGList" flags="b"/>
+		<key id="KEY_EPG" mapto="showEPGList" flags="b"/>
+	</map>
+
 	<map context="ChannelSelectEditActions">
 		<key id="KEY_MENU" mapto="contextMenu" flags="m"/>
 		<key id="KEY_SPACE" mapto="contextMenu" flags="m"/>
@@ -583,6 +592,12 @@
 		<key id="KEY_GREEN" mapto="green" flags="m"/>
 		<key id="KEY_YELLOW" mapto="yellow" flags="m"/>
 		<key id="KEY_BLUE" mapto="blue" flags="m"/>
+	</map>
+
+	<map context="FunctionKeyActions">
+		<key id="KEY_F1" mapto="f1" flags="m"/>
+		<key id="KEY_F2" mapto="f2" flags="m"/>
+		<key id="KEY_F3" mapto="f3" flags="m"/>
 	</map>
 
 	<map context="MsgBoxActions">
