@@ -42,8 +42,6 @@ from enigma import eTimer, eServiceCenter, eDVBServicePMTHandler, iServiceInform
 	iPlayableService, eServiceReference, eEPGCache, eActionMap
 
 from time import time, localtime, strftime
-from os import stat as os_stat
-from os import rename as os_rename
 import os
 from bisect import insort
 from sys import maxint
@@ -1717,6 +1715,20 @@ class InfoBarTimeshift:
 		ts = self.getTimeshift()
 		return ts and ts.isTimeshiftActive()
 
+	def playpauseService(self):
+		service = self.session.nav.getCurrentService()
+		if service and service.streamed():
+			pauseable = service.pause()
+			if pauseable:
+				if self.seekstate == self.SEEK_STATE_PLAY:
+					pauseable.pause()
+					self.seekstate = self.SEEK_STATE_PAUSE
+				else:
+					pauseable.unpause()
+					self.seekstate = self.SEEK_STATE_PLAY
+				return
+		return 0
+
 	def startTimeshift(self, pauseService = True):
 		print "enable timeshift"
 		ts = self.getTimeshift()
@@ -1724,7 +1736,7 @@ class InfoBarTimeshift:
 			if not pauseService and not int(config.usage.timeshift_start_delay.value):
 				self.session.open(MessageBox, _("Timeshift not possible!"), MessageBox.TYPE_ERROR, simple = True)
 			print "no ts interface"
-			return 0
+			return self.playpauseService()
 
 		if ts.isTimeshiftEnabled():
 			print "hu, timeshift already enabled?"
@@ -2190,11 +2202,15 @@ class InfoBarInstantRecord:
 		# try to get event info
 		event = None
 		try:
-			service = self.session.nav.getCurrentService()
 			epg = eEPGCache.getInstance()
 			event = epg.lookupEventTime(info["serviceref"], -1, 0)
 			if event is None:
-				event = service.info().getEvent(0)
+				if hasattr(self, "SelectedInstantServiceRef") and self.SelectedInstantServiceRef:
+					service_info = eServiceCenter.getInstance().info(self.SelectedInstantServiceRef)
+					event = service_info and service_info.getEvent(self.SelectedInstantServiceRef)
+				else:
+					service = self.session.nav.getCurrentService()
+					event = service and service.info().getEvent(0)
 		except:
 			pass
 
@@ -2972,7 +2988,7 @@ class InfoBarTeletextPlugin:
 			print "no teletext plugin found!"
 
 	def startTeletext(self):
-		self.teletext_plugin(session=self.session, service=self.session.nav.getCurrentService())
+		self.teletext_plugin and self.teletext_plugin(session=self.session, service=self.session.nav.getCurrentService())
 
 class InfoBarSubtitleSupport(object):
 	def __init__(self):
@@ -3173,12 +3189,6 @@ class InfoBarPowersaver:
 			self.session.open(Screens.Standby.Standby)
 
 class InfoBarHDMI:
-	def __init__(self):
-		self["HDMIActions"] = HelpableActionMap(self, "InfobarHDMIActions",
-			{
-				"HDMIin":(self.HDMIIn, _("Switch to HDMI in mode")),
-			}, prio=2)
-
 	def HDMIIn(self):
 		slist = self.servicelist
 		if slist.dopipzap:

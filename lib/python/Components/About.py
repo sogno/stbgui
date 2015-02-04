@@ -18,6 +18,12 @@ def getImageVersionString():
 		pass
 	return _("unavailable")
 
+def getFlashDateString():
+	try:
+		return time.strftime(_("%Y-%m-%d %H:%M"), time.localtime(os.stat("/boot").st_ctime))
+	except:
+		return _("unknown")
+
 def getEnigmaVersionString():
 	import enigma
 	enigma_version = enigma.getEnigmaVersionString()
@@ -158,6 +164,14 @@ def getMicomVersionString():
 		return micom.replace('\n','')
 	except IOError:
 		return "unavailable"
-	      
+
+def getPythonVersionString():
+	try:
+		import commands
+		status, output = commands.getstatusoutput("python -V")
+		return output.split(' ')[1]
+	except:
+		return _("unknown")
+
 # For modules that do "from About import about"
 about = sys.modules[__name__]

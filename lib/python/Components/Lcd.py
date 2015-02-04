@@ -1,6 +1,16 @@
 from config import config, ConfigSubsection, ConfigSelection, ConfigSlider, ConfigYesNo, ConfigNothing
 from enigma import eDBoxLCD
 from Components.SystemInfo import SystemInfo
+from Screens.InfoBar import InfoBar
+from Screens.Screen import Screen
+
+class dummyScreen(Screen):
+	skin = """<screen position="0,0" size="0,0" transparent="1">
+	<widget source="session.VideoPicture" render="Pig" position="0,0" size="0,0" backgroundColor="transparent" zPosition="1"/>
+	</screen>"""
+	def __init__(self, session, args=None):
+		Screen.__init__(self, session)
+		self.close()
 
 class LCD:
 	def __init__(self):
@@ -102,15 +112,14 @@ def InitLcd():
 
 		config.lcd.flip = ConfigYesNo(default=False)
 		config.lcd.flip.addNotifier(setLCDflipped);
-		
-		config.lcd.scrollspeed = ConfigSlider(default = 150, increment = 10, limits = (0, 500))
-		config.lcd.scrollspeed.addNotifier(setLCDscrollspeed);
-		
-		config.lcd.repeat = ConfigSelection([("0", _("None")), ("1", _("1X")), ("2", _("2X")), ("3", _("3X")), ("4", _("4X")), ("500", _("Continues"))], "3")
-		config.lcd.repeat.addNotifier(setLCDrepeat);
-		
-		config.lcd.power = ConfigSelection([("0", _("No")), ("1", _("Yes"))], "1")
-		config.lcd.power.addNotifier(setLCDpower);
+
+		if SystemInfo["LcdLiveTV"]:
+			def lcdLiveTvChanged(configElement):
+				open(SystemInfo["LcdLiveTV"], "w").write(configElement.value and "0" or "1")
+				InfoBarInstance = InfoBar.instance
+				InfoBarInstance and InfoBarInstance.session.open(dummyScreen)
+			config.lcd.showTv = ConfigYesNo(default = False)
+			config.lcd.showTv.addNotifier(lcdLiveTvChanged)
 	else:
 		def doNothing():
 			pass

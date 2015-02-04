@@ -27,11 +27,11 @@ class TimerList(HTMLComponent, GUIComponent, object):
 			serviceNameWidth = width - 200 - self.iconWidth - self.iconMargin
 
 		res.append((eListboxPythonMultiContent.TYPE_TEXT, width - serviceNameWidth, 0, serviceNameWidth, self.rowSplit, 0, RT_HALIGN_RIGHT|RT_VALIGN_BOTTOM, serviceName))
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.iconWidth + self.iconMargin, 0, width - serviceNameWidth - self.iconWidth - self.iconMargin, self.rowSplit, 1, RT_HALIGN_LEFT|RT_VALIGN_BOTTOM, timer.name))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.iconWidth + self.iconMargin, 0, width - serviceNameWidth - self.iconWidth - self.iconMargin, self.rowSplit, 2, RT_HALIGN_LEFT|RT_VALIGN_BOTTOM, timer.name))
 
-		days = ( _("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun") )
 		begin = FuzzyTime(timer.begin)
 		if timer.repeated:
+			days = ( _("Mon"), _("Tue"), _("Wed"), _("Thu"), _("Fri"), _("Sat"), _("Sun") )
 			repeatedtext = []
 			flags = timer.repeated
 			for x in (0, 1, 2, 3, 4, 5, 6):
@@ -47,8 +47,6 @@ class TimerList(HTMLComponent, GUIComponent, object):
 			text = repeatedtext + ((" %s "+ _("(ZAP)")) % (begin[1]))
 		else:
 			text = repeatedtext + ((" %s ... %s (%d " + _("mins") + ")") % (begin[1], FuzzyTime(timer.end)[1], (timer.end - timer.begin) / 60))
-		textWidth = getTextBoundarySize(self.instance, self.font, self.l.getItemSize(), text).width()
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, width - textWidth, self.rowSplit, textWidth, self.itemHeight - self.rowSplit, 1, RT_HALIGN_RIGHT|RT_VALIGN_TOP, text))
 		icon = None
 		if not processed:
 			if timer.state == TimerEntry.StateWaiting:
@@ -70,20 +68,19 @@ class TimerList(HTMLComponent, GUIComponent, object):
 			else:
 				state = _("<unknown>")
 				icon = None
+		elif timer.disabled:
+			state = _("disabled")
+			icon = self.iconDisabled
 		else:
 			state = _("done!")
 			icon = self.iconDone
-		if timer.disabled:
-			icon = self.iconDisabled
 
-		if timer.disabled:
-			state = _("disabled")
-
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.iconWidth + self.iconMargin, self.rowSplit, width, self.itemHeight - self.rowSplit, 1, RT_HALIGN_LEFT|RT_VALIGN_TOP, state))
+		icon and res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, self.iconMargin / 2, (self.rowSplit - self.iconHeight) / 2, self.iconWidth, self.iconHeight, icon))
 		orbpos = self.getOrbitalPos(timer.service_ref)
-		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.satPosLeft, self.rowSplit, getTextBoundarySize(self.instance, self.font, self.l.getItemSize(), orbpos).width(), self.itemHeight - self.rowSplit, 1, RT_HALIGN_LEFT|RT_VALIGN_TOP, orbpos))
-		if icon:
-			res.append((eListboxPythonMultiContent.TYPE_PIXMAP_ALPHATEST, self.iconMargin / 2, (self.rowSplit - self.iconHeight) / 2, self.iconWidth, self.iconHeight, icon))
+		orbposWidth = getTextBoundarySize(self.instance, self.font, self.l.getItemSize(), orbpos).width()
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.satPosLeft, self.rowSplit, orbposWidth, self.itemHeight - self.rowSplit, 1, RT_HALIGN_LEFT|RT_VALIGN_TOP, orbpos))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.iconWidth + self.iconMargin, self.rowSplit, self.satPosLeft - self.iconWidth - self.iconMargin, self.itemHeight - self.rowSplit, 1, RT_HALIGN_LEFT|RT_VALIGN_TOP, state))
+		res.append((eListboxPythonMultiContent.TYPE_TEXT, self.satPosLeft + orbposWidth, self.rowSplit, width - self.satPosLeft - orbposWidth, self.itemHeight - self.rowSplit, 1, RT_HALIGN_RIGHT|RT_VALIGN_TOP, text))
 		return res
 
 	def __init__(self, list):
@@ -91,19 +88,17 @@ class TimerList(HTMLComponent, GUIComponent, object):
 		self.l = eListboxPythonMultiContent()
 		self.l.setBuildFunc(self.buildTimerEntry)
 		self.serviceNameFont = gFont("Regular", 20)
-		self.l.setFont(0, self.serviceNameFont)
 		self.font = gFont("Regular", 18)
-		self.l.setFont(1, self.font)
-		self.itemHeight = 50
-		self.l.setItemHeight(self.itemHeight)
-		self.rowSplit = 25
+		self.eventNameFont = gFont("Regular", 18)
 		self.l.setList(list)
+		self.itemHeight = 50
+		self.rowSplit = 25
+		self.iconMargin = 4
+		self.satPosLeft = 160
 		self.iconWait = LoadPixmap(resolveFilename(SCOPE_SKIN_IMAGE, "skin_default/icons/timer_wait.png"))
 		#currently intended that all icons have the same size
 		self.iconWidth = self.iconWait.size().width()
 		self.iconHeight = self.iconWait.size().height()
-		self.iconMargin = 4
-		self.satPosLeft = 160
 		self.iconRecording = LoadPixmap(resolveFilename(SCOPE_SKIN_IMAGE, "skin_default/icons/timer_rec.png"))
 		self.iconPrepared = LoadPixmap(resolveFilename(SCOPE_SKIN_IMAGE, "skin_default/icons/timer_prep.png"))
 		self.iconDone = LoadPixmap(resolveFilename(SCOPE_SKIN_IMAGE, "skin_default/icons/timer_done.png"))
@@ -112,26 +107,30 @@ class TimerList(HTMLComponent, GUIComponent, object):
 		self.iconDisabled = LoadPixmap(resolveFilename(SCOPE_SKIN_IMAGE, "skin_default/icons/timer_off.png"))
 
 	def applySkin(self, desktop, parent):
-		attribs = [ ]
-		for (attrib, value) in self.skinAttributes:
-			if attrib == "itemHeight":
-				self.itemHeight = int(value)
-				self.l.setItemHeight(self.itemHeight)
-			elif attrib == "setServiceNameFont":
-				self.serviceNameFont = parseFont(value, ((1,1),(1,1)))
-				self.l.setFont(0, self.serviceNameFont)
-			elif attrib == "setFont":
-				self.font = parseFont(value, ((1,1),(1,1)))
-				self.l.setFont(1, self.font)
-			elif attrib == "rowSplit":
-				self.rowSplit = int(value)
-			elif attrib == "iconMargin":
-				self.iconMargin = int(value)
-			elif attrib == "satPosLeft":
-				self.satPosLeft = int(value)
-			else:
-				attribs.append((attrib, value))
-		self.skinAttributes = attribs
+		def itemHeight(value):
+			self.itemHeight = int(value)
+		def setServiceNameFont(value):
+			self.serviceNameFont = parseFont(value, ((1,1),(1,1)))
+		def setEventNameFont(value):
+			self.eventNameFont = parseFont(value, ((1,1),(1,1)))
+		def setFont(value):
+			self.font = parseFont(value, ((1,1),(1,1)))
+		def rowSplit(value):
+			self.rowSplit = int(value)
+		def iconMargin(value):
+			self.iconMargin = int(value)
+		def satPosLeft(value):
+			self.satPosLeft = int(value)
+		for (attrib, value) in list(self.skinAttributes):
+			try:
+				locals().get(attrib)(value)
+				self.skinAttributes.remove((attrib, value))
+			except:
+				pass
+		self.l.setItemHeight(self.itemHeight)
+		self.l.setFont(0, self.serviceNameFont)
+		self.l.setFont(1, self.font)
+		self.l.setFont(2, self.eventNameFont)
 		return GUIComponent.applySkin(self, desktop, parent)
 
 	def getCurrent(self):
