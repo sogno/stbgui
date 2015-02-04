@@ -37,7 +37,7 @@ class About(Screen):
 		driversdate = '-'.join((year, month, day))
 		AboutText += _("Drivers: %s") % about.getDriverBuildDateString() + "\n"
 
-		hddsplit = skin.parameters.get("AboutHddSplit",(0))[0]
+		hddsplit = 30 #skin.parameters.get("AboutHddSplit",(0))[0]
 
 		AboutText += _("Image: ") + about.getImageTypeString() + "\n"
 		AboutText += _("Installed: ") + about.getFlashDateString() + "\n"
