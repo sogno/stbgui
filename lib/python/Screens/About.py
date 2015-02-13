@@ -23,6 +23,7 @@ from os import path, popen
 class About(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		hddsplit, = skin.parameters.get("AboutHddSplit", (0,))
 
 		AboutText = _("Hardware: %s %s\n") % (getMachineBrand(), getMachineName())
 		if path.exists('/proc/stb/info/chipset'):
@@ -37,8 +38,6 @@ class About(Screen):
 		driversdate = '-'.join((year, month, day))
 		AboutText += _("Drivers: %s") % about.getDriverBuildDateString() + "\n"
 
-		hddsplit = 30 #skin.parameters.get("AboutHddSplit",(0))[0]
-
 		AboutText += _("Image: ") + about.getImageTypeString() + "\n"
 		AboutText += _("Installed: ") + about.getFlashDateString() + "\n"
 		AboutText += _("Kernel version: ") + about.getKernelVersionString() + "\n"
@@ -48,7 +47,7 @@ class About(Screen):
 		self["EnigmaVersion"] = StaticText(EnigmaVersion)
 		AboutText += EnigmaVersion + "\n"
 
-		GStreamerVersion = "GStreamer: " + about.getGStreamerVersionString()
+		GStreamerVersion = "GStreamer: " + about.getGStreamerVersionString().replace("GStreamer","")
 		self["GStreamerVersion"] = StaticText(GStreamerVersion)
 		AboutText += GStreamerVersion + "\n"
 
