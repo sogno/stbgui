@@ -1,7 +1,15 @@
-import os, xml.dom.minidom
+# -*- coding: utf-8 -*-
+import os, xml.dom.minidom, re
 from enigma import iServiceInformation
 
-DUMPBIN = "/usr/lib/enigma2/python/Plugins/Extensions/Browser/dumpait"
+RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
+                 u'|' + \
+                 u'([%s-%s][^%s-%s])|([^%s-%s][%s-%s])|([%s-%s]$)|(^[%s-%s])' % \
+                  (unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
+                   unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
+                   unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff))
+
+DUMPBIN = "/usr/lib/enigma2/python/Plugins/Extensions/HbbTV/dumpait"
 class eAITSectionReader:
 	def __init__(self, demux, pmtid, sid):
 		self.mVuplusBox = False
@@ -71,12 +79,12 @@ class eAITSectionReader:
 			return False
 		if len(document) == 0:
 			return False
+		document = re.sub(RE_XML_ILLEGAL, "?", document)
+		document = re.sub("&", "+", document)
 		document = document.decode("cp1252").encode("utf-8")
+		document = "<URL>" + document + "</URL>"
 		#print document
-		try:
-			self.mDocument = xml.dom.minidom.parseString(document)
-		except:
-			self.mDocument = xml.dom.minidom.parseString(document.replace('&', ' '))  
+		self.mDocument = xml.dom.minidom.parseString(document)
 		return True
 
 	def doDump(self):
