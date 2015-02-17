@@ -9,7 +9,7 @@ RE_XML_ILLEGAL = u'([\u0000-\u0008\u000b-\u000c\u000e-\u001f\ufffe-\uffff])' + \
                    unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff),
                    unichr(0xd800),unichr(0xdbff),unichr(0xdc00),unichr(0xdfff))
 
-DUMPBIN = "/usr/lib/enigma2/python/Plugins/Extensions/HbbTV/dumpait"
+DUMPBIN = "/usr/lib/enigma2/python/Plugins/Extensions/Browser/dumpait"
 class eAITSectionReader:
 	def __init__(self, demux, pmtid, sid):
 		self.mVuplusBox = False
