@@ -15,25 +15,19 @@ from operator import itemgetter
 class ProtectedScreen:
 	def __init__(self):
 		if self.isProtected():
-			self.onFirstExecBegin.append(boundFunction(self.session.openWithCallback, self.pinEntered, PinInput, pinList = self.getPinList(), triesEntry = self.getTriesEntry(), title = self.getPinText(), windowTitle = _("Enter pin code")))
-
-	def getTriesEntry(self):
-		return config.ParentalControl.retries.servicepin
-
-	def getPinText(self):
-		return _("Please enter the correct pin code")
+			self.onFirstExecBegin.append(boundFunction(self.session.openWithCallback, self.pinEntered, PinInput, pinList=[x.value for x in config.ParentalControl.servicepin], triesEntry=config.ParentalControl.retries.servicepin, title=_("Please enter the correct pin code"), windowTitle=_("Enter pin code")))
 
 	def isProtected(self):
-		return config.ParentalControl.servicepinactive.value
-
-	def getPinList(self):
-		return [ x.value for x in config.ParentalControl.servicepin ]
+		return (config.ParentalControl.servicepinactive.value or config.ParentalControl.setuppinactive.value)
 
 	def pinEntered(self, result):
 		if result is None:
-			self.close()
+			self.closeProtectedScreen()
 		elif not result:
-			self.session.openWithCallback(self.close, MessageBox, _("The pin code you entered is wrong."), MessageBox.TYPE_ERROR)
+			self.session.openWithCallback(self.closeProtectedScreen, MessageBox, _("The pin code you entered is wrong."), MessageBox.TYPE_ERROR)
+
+	def closeProtectedScreen(self, result=None):
+		self.close(None)
 
 class ParentalControlSetup(Screen, ConfigListScreen, ProtectedScreen):
 	def __init__(self, session):
@@ -62,19 +56,37 @@ class ParentalControlSetup(Screen, ConfigListScreen, ProtectedScreen):
 	def layoutFinished(self):
 		self.setTitle(self.setup_title)
 
+	def isProtected(self):
+		return (not config.ParentalControl.setuppinactive.value and config.ParentalControl.servicepinactive.value) or\
+			(not config.ParentalControl.setuppinactive.value and config.ParentalControl.config_sections.configuration.value) or\
+			(not config.ParentalControl.config_sections.configuration.value and config.ParentalControl.setuppinactive.value and not config.ParentalControl.config_sections.main_menu.value)
+
 	def createSetup(self):
 		self.changePin = None
 		self.reloadLists = None
 		self.list = []
 		self.list.append(getConfigListEntry(_("Protect services"), config.ParentalControl.servicepinactive))
 		if config.ParentalControl.servicepinactive.value:
-			self.changePin = getConfigListEntry(_("Change service PIN"), NoSave(ConfigNothing()))
+			self.changePin = getConfigListEntry(_("Change PIN"), NoSave(ConfigNothing()))
 			self.list.append(self.changePin)
 			self.list.append(getConfigListEntry(_("Remember service PIN"), config.ParentalControl.storeservicepin))
-			self.list.append(getConfigListEntry(_("Protect on epg age"), config.ParentalControl.age))	
-			self.reloadLists = getConfigListEntry(_("Reload black-/white lists"), NoSave(ConfigNothing()))
+			if config.ParentalControl.storeservicepin.value != "never":
+				self.list.append(getConfigListEntry(_("Hide parentel locked services"), config.ParentalControl.hideBlacklist))
+			self.list.append(getConfigListEntry(_("Protect on epg age"), config.ParentalControl.age))
+			self.reloadLists = getConfigListEntry(_("Reload blacklists"), NoSave(ConfigNothing()))
 			self.list.append(self.reloadLists)
-
+		self.list.append(getConfigListEntry(_("Protect Screens"), config.ParentalControl.setuppinactive))
+		if config.ParentalControl.setuppinactive.value:
+			if not self.changePin:
+				self.changePin = getConfigListEntry(_("Change PIN"), NoSave(ConfigNothing()))
+				self.list.append(self.changePin)
+			self.list.append(getConfigListEntry(_("Protect main menu"), config.ParentalControl.config_sections.main_menu))
+			if not config.ParentalControl.config_sections.main_menu.value:
+				self.list.append(getConfigListEntry(_("Protect timer menu"), config.ParentalControl.config_sections.timer_menu))
+				self.list.append(getConfigListEntry(_("Protect plugin browser"), config.ParentalControl.config_sections.plugin_browser))
+				self.list.append(getConfigListEntry(_("Protect configuration"), config.ParentalControl.config_sections.configuration))
+				self.list.append(getConfigListEntry(_("Protect standby menu"), config.ParentalControl.config_sections.standby_menu))
+			self.list.append(getConfigListEntry(_("Protect movie list"), config.ParentalControl.config_sections.movie_list))
 		self["config"].list = self.list
 		self["config"].setList(self.list)
 
@@ -97,13 +109,6 @@ class ParentalControlSetup(Screen, ConfigListScreen, ProtectedScreen):
 		ConfigListScreen.keyRight(self)
 		self.createSetup()
 
-	def ServicePinMessageCallback(self, value):
-		if value:
-			self.session.openWithCallback(self.cancelCB, ParentalControlChangePin, config.ParentalControl.servicepin[0], _("service PIN"))
-		else:
-			config.ParentalControl.servicepinactive.value = False
-			self.keySave()
-
 	def cancelCB(self, value):
 		self.keySave()
 
@@ -120,13 +125,13 @@ class ParentalControlSetup(Screen, ConfigListScreen, ProtectedScreen):
 			self.close()
 
 	def keySave(self):
-		if config.ParentalControl.servicepinactive.value and config.ParentalControl.servicepin[0].value == "aaaa":
-			self.session.openWithCallback(self.ServicePinMessageCallback, MessageBox, _("No valid service PIN found!\nDo you like to change the service PIN now?\nWhen you say 'No' here the service protection stay disabled!"), MessageBox.TYPE_YESNO)
-		else:
+		if self["config"].isChanged():
 			for x in self["config"].list:
 				x[1].save()
-				configfile.save()
-			self.close(self.recursive)
+			configfile.save()
+			from Components.ParentalControl import parentalControl
+			parentalControl.hideBlacklist()
+		self.close(self.recursive)
 
 	def closeRecursive(self):
 		self.recursive = True
@@ -149,127 +154,6 @@ class ParentalControlSetup(Screen, ConfigListScreen, ProtectedScreen):
 	def createSummary(self):
 		from Screens.Setup import SetupSummary
 		return SetupSummary
-
-SPECIAL_CHAR = 96
-class ParentalControlEditor(Screen):
-	def __init__(self, session):
-		Screen.__init__(self, session)
-		self.list = []
-		self.servicelist = ParentalControlList(self.list)
-		self["servicelist"] = self.servicelist;
-		self.currentLetter = chr(SPECIAL_CHAR)
-		self.readServiceList()
-		self.chooseLetterTimer = eTimer()
-		self.chooseLetterTimer.callback.append(self.chooseLetter)
-		self.onLayoutFinish.append(self.LayoutFinished)
-
-		self["actions"] = NumberActionMap(["DirectionActions", "ColorActions", "OkCancelActions", "NumberActions"],
-		{
-			"ok": self.select,
-			"cancel": self.cancel,
-			"1": self.keyNumberGlobal,
-			"2": self.keyNumberGlobal,
-			"3": self.keyNumberGlobal,
-			"4": self.keyNumberGlobal,
-			"5": self.keyNumberGlobal,
-			"6": self.keyNumberGlobal,
-			"7": self.keyNumberGlobal,
-			"8": self.keyNumberGlobal,
-			"9": self.keyNumberGlobal,
-			"0": self.keyNumberGlobal
-		}, -1)
-
-	def LayoutFinished(self):
-		self.chooseLetterTimer.start(0, True)
-
-	def cancel(self):
-		self.chooseLetter()
-
-	def select(self):
-		self.servicelist.toggleSelectedLock()
-
-	def keyNumberGlobal(self, number):
-		pass
-
-	def readServiceList(self):
-		serviceHandler = eServiceCenter.getInstance()
-		refstr = '%s ORDER BY name' % (service_types_tv)
-		self.root = eServiceReference(refstr)
-		self.servicesList = {}
-		list = serviceHandler.list(self.root)
-		if list is not None:
-			services = list.getContent("CN", True) #(servicecomparestring, name)
-			for s in services:
-				key = s[1].lower()[0]
-				if key < 'a' or key > 'z':
-					key = chr(SPECIAL_CHAR)
-				#key = str(key)
-				if not self.servicesList.has_key(key):
-					self.servicesList[key] = []
-				self.servicesList[key].append(s)
-
-	def chooseLetter(self):
-		mylist = []
-		for x in self.servicesList.keys():
-			if x == chr(SPECIAL_CHAR):
-				x = (_("special characters"), x)
-			else:
-				x = (x, x)
-			mylist.append(x)
-		mylist.sort(key=itemgetter(1))
-		sel = ord(self.currentLetter) - SPECIAL_CHAR
-		self.session.openWithCallback(self.letterChosen, ChoiceBox, title=_("Show services beginning with"), list=mylist, keys = [], selection = sel)
-
-	def letterChosen(self, result):
-		from Components.ParentalControl import parentalControl
-		if result is not None:
-			self.currentLetter = result[1]
-			#Replace getProtectionLevel by new getProtectionType
-			self.list = [ParentalControlEntryComponent(x[0], x[1], parentalControl.getProtectionType(x[0])) for x in self.servicesList[result[1]]]
-			self.servicelist.setList(self.list)
-		else:
-			parentalControl.save()
-			self.close()
-
-class ParentalControlBouquetEditor(Screen):
-	#This new class allows adding complete bouquets to black- and whitelists
-	#The servicereference that is stored for bouquets is their refstr as listed in bouquets.tv
-	def __init__(self, session):
-		Screen.__init__(self, session)
-		self.skinName = "ParentalControlEditor"
-		self.list = []
-		self.bouquetslist = ParentalControlList(self.list)
-		self["servicelist"] = self.bouquetslist;
-		self.readBouquetList()
-		self.onLayoutFinish.append(self.selectBouquet)
-
-		self["actions"] = NumberActionMap(["DirectionActions", "ColorActions", "OkCancelActions"],
-		{
-			"ok": self.select,
-			"cancel": self.cancel
-		}, -1)
-
-	def cancel(self):
-		from Components.ParentalControl import parentalControl
-		parentalControl.save()
-		self.close()
-
-	def select(self):
-		self.bouquetslist.toggleSelectedLock()
-
-	def readBouquetList(self):
-		serviceHandler = eServiceCenter.getInstance()
-		refstr = '1:134:1:0:0:0:0:0:0:0:FROM BOUQUET \"bouquets.tv\" ORDER BY bouquet'
-		bouquetroot = eServiceReference(refstr)
-		self.bouquetlist = {}
-		list = serviceHandler.list(bouquetroot)
-		if list is not None:
-			self.bouquetlist = list.getContent("CN", True)
-
-	def selectBouquet(self):
-		from Components.ParentalControl import parentalControl
-		self.list = [ParentalControlEntryComponent(x[0], x[1], parentalControl.getProtectionType(x[0])) for x in self.bouquetlist]
-		self.bouquetslist.setList(self.list)
 
 class ParentalControlChangePin(Screen, ConfigListScreen, ProtectedScreen):
 	def __init__(self, session, pin, pinname):
