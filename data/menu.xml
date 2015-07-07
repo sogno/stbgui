@@ -77,8 +77,10 @@ self.session.openWithCallback(checkPIN, InputBox, title=msg, windowTitle=_('Inse
 				<item level="0" text="Hotkey" entryID="hotkey_setup"><screen module="Hotkey" screen="HotkeySetup"/></item>
 			</menu>
 			<menu weight="10" text="SoftCam / CI" entryID="cam_setup">
-				<id val="cam"/>
+				<id val="cam" />
 				<item weight="10" level="1" text="Common Interface" entryID="ci_setup" requires="CommonInterface"><screen module="Ci" screen="CiSelection"/></item>
+				<item weight="10" level="1" text="Common interface PIN Setup" entryID="ci_setup" requires="CommonInterface"><screen module="Ci" screen="CiDefaultPinSetup" /></item>
+				<item weight="10" level="1" text="CI+ Setup" entryID="ci_setup" requires="CIHelper"><screen module="Ci" screen="CIHelper" /></item>
 			</menu>
 			<item weight="15" level="0" text="Parental control" entryID="parental_setup"><screen module="ParentalControlSetup" screen="ParentalControlSetup"/></item>
 			<item weight="15" level="0" text="Factory reset" entryID="factory_reset">
