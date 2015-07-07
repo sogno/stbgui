@@ -1,12 +1,19 @@
+from boxbranding import getMachineBrand, getMachineName
+
 from Screen import Screen
+from Screens.Standby import TryQuitMainloop
+from Screens.MessageBox import MessageBox
 from Components.ActionMap import ActionMap
 from Components.ActionMap import NumberActionMap
 from Components.Label import Label
-
-from Components.config import config, ConfigSubsection, ConfigSelection, ConfigSubList, getConfigListEntry, KEY_LEFT, KEY_RIGHT, KEY_0, ConfigNothing, ConfigPIN
-from Components.ConfigList import ConfigList
-
+from Components.Pixmap import Pixmap
+from Components.config import config, ConfigNumber, ConfigYesNo, ConfigSubsection, ConfigSelection, ConfigSubList, NoSave, getConfigListEntry, KEY_LEFT, KEY_RIGHT, KEY_0, ConfigNothing, ConfigPIN
+from Components.ConfigList import ConfigList, ConfigListScreen
+from Components.Console import Console
 from Components.SystemInfo import SystemInfo
+from Tools.Directories import fileExists
+import time
+from os import path as os_path, remove, unlink, rename, chmod, access, X_OK, system as os_system
 
 from enigma import eTimer, eDVBCI_UI, eDVBCIInterfaces
 
@@ -22,7 +29,7 @@ def InitCiConfig():
 	config.ci = ConfigSubList()
 	for slot in range(MAX_NUM_CI):
 		config.ci.append(ConfigSubsection())
-		config.ci[slot].canDescrambleMultipleServices = ConfigSelection(choices = [("auto", _("Auto")), ("no", _("No")), ("yes", _("Yes"))], default = "auto")
+		config.ci[slot].canDescrambleMultipleServices = ConfigSelection(choices = [("auto", _("Auto")), ("no", _("No")), ("yes", _("Yes"))], default = "no")
 		if SystemInfo["CommonInterfaceSupportsHighBitrates"]:
 			config.ci[slot].canHandleHighBitrates = ConfigSelection(choices = [("no", _("No")), ("yes", _("Yes"))], default = "yes")
 			config.ci[slot].canHandleHighBitrates.slotid = slot
@@ -82,16 +89,22 @@ class MMIDialog(Screen):
 			list.append( (entry[1], ConfigNothing(), entry[2]) )
 		if entry[0] == "PIN":
 			pinlength = entry[1]
+			pin = config.cipin.pin1.value
+			if len(str(config.cipin.pin1.value)) == 3:
+				pin = "0" + str(config.cipin.pin1.value)
+				pinlength = 4
 			if entry[3] == 1:
 				# masked pins:
-				x = ConfigPIN(0, len = pinlength, censor = "*")
+				x = ConfigPIN(int(pin), len = pinlength, censor = "*")
 			else:
 				# unmasked pins:
-				x = ConfigPIN(0, len = pinlength)
+				x = ConfigPIN(int(pin), len = pinlength)
 			x.addEndNotifier(self.pinEntered)
 			self["subtitle"].setText(entry[2])
 			list.append( getConfigListEntry("", x) )
 			self["bottom"].setText(_("please press OK when ready"))
+			if config.cipin.pin1autook.value:
+				self.okbuttonClick()
 
 	def pinEntered(self, value):
 		self.okbuttonClick()
@@ -115,10 +128,22 @@ class MMIDialog(Screen):
 			self.handler.answerMenu(self.slotid, 0)
 			self.showWait()
 		elif self.tag == "ENQ":
+			pin = config.cipin.pin1.value
+			if len(str(config.cipin.pin1.value)) == 3:
+				pin = "0" + str(config.cipin.pin1.value)
 			cur = self["entries"].getCurrent()
-			answer = str(cur[1].value)
+			try:
+				answer = str(cur[1].value)
+			except:
+				answer = str(pin)
+
 			length = len(answer)
-			while length < cur[1].getLength():
+			
+			try:
+				pinlen = cur[1].getLength()
+			except:
+				pinlen = len(str(pin))
+			while length < pinlen:
 				answer = '0'+answer
 				length+=1
 			self.handler.answerEnq(self.slotid, answer)
@@ -178,8 +203,7 @@ class MMIDialog(Screen):
 		self["title"].setText("")
 		self["subtitle"].setText("")
 		self["bottom"].setText("")
-		list = [ ]
-		list.append( (self.wait_text, ConfigNothing()) )
+		list = [(self.wait_text, ConfigNothing())]
 		self.updateList(list)
 
 	def showScreen(self):
@@ -259,7 +283,10 @@ class CiMessageHandler:
 				self.dlgs[slot].ciStateChanged()
 			elif eDVBCI_UI.getInstance().availableMMI(slot) == 1:
 				if self.session and not config.usage.hide_ci_messages.value:
-					self.dlgs[slot] = self.session.openWithCallback(self.dlgClosed, MMIDialog, slot, 3)
+					try:
+						self.dlgs[slot] = self.session.openWithCallback(self.dlgClosed, MMIDialog, slot, 3)
+					except:
+						pass
 
 	def dlgClosed(self, slot):
 		if slot in self.dlgs:
@@ -278,6 +305,7 @@ CiHandler = CiMessageHandler()
 class CiSelection(Screen):
 	def __init__(self, session):
 		Screen.__init__(self, session)
+		self.setTitle(_("Common Interface"))
 		self["actions"] = ActionMap(["OkCancelActions", "CiSelectionActions"],
 			{
 				"left": self.keyLeft,
@@ -301,7 +329,7 @@ class CiSelection(Screen):
 		menuList.l.setList(self.list)
 		self["entries"] = menuList
 		self["entries"].onSelectionChanged.append(self.selectionChanged)
-		self["text"] = Label(_("Slot %d")%(1))
+		self["text"] = Label(_("Slot %d")% 1)
 
 	def selectionChanged(self):
 		cur_idx = self["entries"].getCurrentIndex()
@@ -393,3 +421,108 @@ class CiSelection(Screen):
 			if state != -1:
 				CiHandler.unregisterCIMessageHandler(slot)
 		self.close()
+
+config.cipin = ConfigSubsection()
+config.cipin.pin1 = ConfigPIN(1234, len = 4)
+config.cipin.pin1autook = ConfigYesNo(default=False)
+
+class CiDefaultPinSetup(ConfigListScreen, Screen):
+	def __init__(self, session, args = 0):
+		Screen.__init__(self, session)
+		self.skinName = ["Setup"]
+			
+		list = []
+		list.append(getConfigListEntry(_('Default PIN for CI'), config.cipin.pin1))
+		list.append(getConfigListEntry(_('Enable auto PIN'), config.cipin.pin1autook))
+
+		self["key_red"] = Label(_("Exit"))
+		self["key_green"] = Label(_("Save"))
+			
+		ConfigListScreen.__init__(self, list)
+		self['actions'] = ActionMap(['OkCancelActions', 'ColorActions'], 
+		{
+			'red' : self.dontSaveAndExit,  
+			'green': self.saveAndExit, 
+			'cancel': self.dontSaveAndExit
+		}, -1)
+
+	def saveAndExit(self):
+		for x in self['config'].list:
+			x[1].save()
+
+		config.cipin.save()
+		self.close()
+
+	def dontSaveAndExit(self):
+		for x in self['config'].list:
+		    x[1].cancel()
+		self.close()
+
+class CIHelper(Screen):
+	skin = """
+	<screen name="CIHelper" title="CIHelper Setup" position="center,center" size="400,180" >
+		<widget name="autostart" position="10,130" size="150,30" font="Regular;22" valign="center" halign="left" backgroundColor="layer-a-background" foregroundColor="layer-a-foreground" transparent="1" />
+		<widget name="labdisabled" position="130,130" size="172,30" font="Regular;22" valign="center" halign="center" backgroundColor="red" zPosition="1" />
+		<widget name="labactive" position="130,130" size="172,30" font="Regular;22" valign="center" halign="center" backgroundColor="green" zPosition="2" />
+		<ePixmap pixmap="buttons/red.png" position="0,0" size="140,40" alphatest="on" />
+		<widget name="key_red" position="0,0" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#9f1313" transparent="1" />
+		<ePixmap pixmap="buttons/green.png" position="140,0" size="140,40" alphatest="on" />
+		<widget name="key_green" position="140,0" zPosition="1" size="140,40" font="Regular;20" halign="center" valign="center" backgroundColor="#1f771f" transparent="1" />
+	</screen>"""
+
+	def __init__(self, session):
+		Screen.__init__(self, session)
+		Screen.setTitle(self, _("CI+ Setup"))
+		self.skinName = "CIHelper"
+		self.onChangedEntry = [ ]
+
+		self['autostart'] = Label(_("Status:"))
+		self['labactive'] = Label(_(_("Active")))
+		self['labdisabled'] = Label(_(_("Disabled")))
+
+		self['key_red'] = Label("Exit")
+		self['key_green'] = Label()
+		self.Console = Console()
+		self.my_cihelper_active = False
+		self.my_cihelper_run = False
+		self['actions'] = ActionMap(['WizardActions', 'ColorActions', 'SetupActions'], {'red': self.close, 'back': self.close, 'green': self.CIHelperStartStop})
+		self.onLayoutFinish.append(self.updateService)
+
+	def CIHelperStartStop(self):
+		self.CIHelperset()
+		if not self.my_cihelper_run:
+			self.Console.ePopen('/etc/init.d/blackbox-ci-controller start', self.StartStopCallback)
+		elif self.my_cihelper_run:
+			self.Console.ePopen('/etc/init.d/blackbox-ci-controller stop', self.StartStopCallback)
+
+	def StartStopCallback(self, result = None, retval = None, extra_args = None):
+		message = _("Changes need a system restart to take effect.\nRestart your %s %s now?") % (getMachineBrand(), getMachineName())
+		ybox = self.session.openWithCallback(self.restartBox, MessageBox, message, MessageBox.TYPE_YESNO)
+		ybox.setTitle(_("Restart %s %s.") % (getMachineBrand(), getMachineName()))
+		
+	def CIHelperset(self):
+		if fileExists('/etc/rcS.d/S50blackbox-ci-controller'):
+			self.Console.ePopen('update-rc.d -f blackbox-ci-controller remove', self.StartStopCallback)
+		else:
+			self.Console.ePopen('update-rc.d -f -s blackbox-ci-controller start 50 S .', self.StartStopCallback)
+
+	def updateService(self):
+		import process
+		p = process.ProcessList()
+		cihelper_process = str(p.named('blackbox-ci-con')).strip('[]')
+		self['labactive'].hide()
+		self['labdisabled'].show()
+		self['key_green'].setText(_("Start"))
+		self.my_cihelper_run = False
+		
+		if cihelper_process:
+			self.my_cihelper_run = True
+			self['labdisabled'].hide()
+			self['labactive'].show()
+			self['key_green'].setText(_("Stop"))
+
+	def restartBox(self, answer):
+		if answer is True:
+			self.session.open(TryQuitMainloop, 2)
+		else:
+			self.close()
